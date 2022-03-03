@@ -64,7 +64,7 @@ else:
 
 class GDBHistory(FileHistory):
     """
-    Mabage your GDB History
+    Manage your GDB History
     """
     def __init__(self, filename, ignore_duplicates=False):
         self.ignore_duplicates = ignore_duplicates
