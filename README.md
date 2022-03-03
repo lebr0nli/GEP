@@ -8,7 +8,7 @@
 
 GDB's original prompt is using hardcoded built-in GNU readline library, we can't add our custom function and key binding easily. The old way to implement them is by patching the GDB's C source code and compiling it again.
 
-Now, with this plug-in, you can write your function in Python and use arbitrary key binding easily with GEP!
+Now, you can write your function in Python and use arbitrary key binding easily with GEP!
 
 And also, GEP has some awesome features already, you can directly use it!
 
