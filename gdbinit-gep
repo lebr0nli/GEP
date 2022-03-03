@@ -1,0 +1,14 @@
+# use history
+set history save on
+
+# ignore duplicates
+set history remove-duplicates unlimited
+
+# save all GDB histories to a same place (For example, ~/.gdb_history)
+# set history filename ~/.gdb_history
+
+# set completions limit (default is 200)
+# set max-completions unlimited
+
+# Load the plug-in
+source ~/GEP/.gdbinit-gep.py
