@@ -16,9 +16,9 @@ And also, GEP has some awesome features already, you can directly use it!
 
 - `Ctrl+R` for fzf history reverse search
 - `up-arrow` for partial string matching in history
-- `TAB` for auto-completion with menu
+- `TAB` for auto-completion with floating window
 - fish-like autosuggestions
-- custom key binding and its callback function by modifying "geprc.py"
+- has the ability to build custom key binding and its callback function by modifying `geprc.py`
 
 ## How to install it?
 
