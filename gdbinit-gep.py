@@ -26,6 +26,28 @@ from prompt_toolkit.application import run_in_terminal
 # global variables
 HAS_FZF = which('fzf') is not None
 HISTORY_FILENAME = '.gdb_history'
+# This sucks, but there's not a GDB API for checking dont-repeat now.
+# I just collect some common used commands which should not be repeated.
+# If you have some user-define function, add your command into the list manually.
+# If you found a command should/shouldn't in this list, please let me know on the issue page, thanks!
+DONT_REPEAT = [
+    # original GDB
+    'attach',
+    'run', 'r',
+    'detach',
+    'help',
+    'complete',
+    'quit', 'q',
+    # for GEF
+    'theme',
+    'canary',
+    'functions',
+    'gef',
+    'tmux-setup',
+    # your functions:
+    # 'foo',
+    # 'bar'
+]
 try:
     from geprc import BINDINGS
 except ImportError:
@@ -134,38 +156,37 @@ class GDBConsoleWrapper:
                 HISTORY_FILENAME = gdb.execute('show history filename', to_string=True)[55:-2]
                 HISTORY_FILENAME = ast.literal_eval(HISTORY_FILENAME)  # parse escape character
                 is_ignore_duplicates = "unlimited" in gdb.execute('show history remove-duplicates', to_string=True)
-                session = PromptSession(
-                    history=GDBHistory(HISTORY_FILENAME, ignore_duplicates=is_ignore_duplicates),
-                    enable_history_search=True,
-                    auto_suggest=AutoSuggestFromHistory(),
-                    completer=GDBCompleter(),
-                    complete_while_typing=False,
-                    key_bindings=BINDINGS
-                )
+                gdb_history = GDBHistory(HISTORY_FILENAME, ignore_duplicates=is_ignore_duplicates)
             else:
                 print_warning('`set history save on` for better experience with GEP')
-                session = PromptSession(
-                    history=InMemoryHistory(),
-                    enable_history_search=True,
-                    auto_suggest=AutoSuggestFromHistory(),
-                    completer=GDBCompleter(),
-                    complete_while_typing=False,
-                    key_bindings=BINDINGS
-                )
+                gdb_history = InMemoryHistory()
+            session = PromptSession(
+                history=gdb_history,
+                enable_history_search=True,
+                auto_suggest=AutoSuggestFromHistory(),
+                completer=GDBCompleter(),
+                complete_while_typing=False,
+                key_bindings=BINDINGS
+            )
             while True:
-                # emulate the original prompt
-                prompt_string = old_prompt_hook(current_prompt) if old_prompt_hook else None
-                if prompt_string is None:  # prompt string is set by gdb command
-                    prompt_string = gdb.execute('show prompt', to_string=True)[16:-2]
-                    prompt_string = prompt_string.replace('\\e', '\033')  # fix for color string
-                    prompt_string = ast.literal_eval(prompt_string)  # parse escape character
-                prompt_string = prompt_string.replace('\001', '').replace('\002', '')  # fix for ANSI prompt
                 try:
+                    # emulate the original prompt
+                    prompt_string = old_prompt_hook(current_prompt) if old_prompt_hook else None
+                    if prompt_string is None:  # prompt string is set by gdb command
+                        prompt_string = gdb.execute('show prompt', to_string=True)[16:-2]
+                        prompt_string = prompt_string.replace('\\e', '\033')  # fix for color string
+                        prompt_string = ast.literal_eval(prompt_string)  # parse escape character
+                    prompt_string = prompt_string.replace('\001', '').replace('\002', '')  # fix for ANSI prompt
                     gdb_cmd = session.prompt(ANSI(prompt_string))
-                    try:
-                        gdb.execute(gdb_cmd, from_tty=True)
-                    except gdb.error as e:
-                        print(e)
+                    if not gdb_cmd.strip():
+                        gdb_cmd_list = gdb_history.get_strings()
+                        if gdb_cmd_list:
+                            previous_gdb_cmd = gdb_cmd_list[-1]
+                            if previous_gdb_cmd.split() and previous_gdb_cmd.split()[0] not in DONT_REPEAT:
+                                gdb_cmd = previous_gdb_cmd
+                    gdb.execute(gdb_cmd, from_tty=True)
+                except gdb.error as e:
+                    print(e)
                 except (EOFError, KeyboardInterrupt):
                     gdb.execute('quit')
                 except Exception as e:
