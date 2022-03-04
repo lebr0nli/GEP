@@ -34,7 +34,7 @@ cd GEP && \
 sh install.sh
 ```
 
-> Note: This project is using prompt-toolkit 2.0.10 (because IDK why prompt-toolkit 3 is not working with GDB Python API), so the `install.sh` will download `prompt-toolkit==2.0.10` to `~/GEP/`.
+> Note: This project is using prompt-toolkit 2.0.10 (because IDK why prompt-toolkit 3 is not working with GDB Python API), so the `install.sh` will download `prompt_toolkit==2.0.10` to `~/GEP/`.
 > Maybe we can build our prompt toolkit just for this plug-in in the future.
 
 3. Add `source ~/GEP/.gdbinit-gep` to the last line of your `~/.gdbinit`
