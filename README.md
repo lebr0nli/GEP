@@ -56,7 +56,7 @@ You can also add your custom key bindings by modifying `~/GEP/geprc.py`.
 
 ## The trade-offs
 
-Since GDB Python API doesn't have a good API to fully control and emulate its prompt, this plug-in has some side
+Since GDB doesn't have a good Python API to fully control and emulate its prompt, this plug-in has some side
 effects.
 
 However, the side effects are avoidable, here are the guides to avoid them:
