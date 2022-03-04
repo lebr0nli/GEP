@@ -29,9 +29,6 @@ HISTORY_FILENAME = '.gdb_history'
 from geprc import BINDINGS
 
 
-# BINDINGS = KeyBindings()
-
-
 # function for logging
 def print_info(s):
     print_formatted_text(FormattedText([('#00FFFF', s)]))
