@@ -2,11 +2,12 @@
 
 [![asciicast](https://asciinema.org/a/TJiEkHv3cqieR0XizG41uOg93.svg)](https://asciinema.org/a/TJiEkHv3cqieR0XizG41uOg93)
 
-`GEP` (GDB Enhanced Prompt) is a GDB plug-in which make your GDB console's prompt more convinent and flexibility.
+`GEP` (GDB Enhanced Prompt) is a GDB plug-in which make your GDB console's prompt more convenient and flexibility.
 
 ## Why I need this plug-in?
 
-GDB's original prompt is using hardcoded built-in GNU readline library, we can't add our custom function and key binding easily. The old way to implement them is by patching the GDB's C source code and compiling it again.
+GDB's original prompt is using hardcoded built-in GNU readline library, we can't add our custom function and key binding
+easily. The old way to implement them is by patching the GDB's C source code and compiling it again.
 
 Now, you can write your function in Python and use arbitrary key binding easily with GEP!
 
@@ -53,18 +54,44 @@ You can modify configuration about history and auto-completion in `~/GEP/.gdbini
 
 You can also add your custom key bindings by modifying `~/GEP/geprc.py`.
 
-## A tiny side effect :(
+## The trade-offs
 
-The gdb event: `gdb.event.before_prompt` may be called only once, and this issue maybe will never, and can't be fixed.
+Since GDB Python API doesn't have a good API to fully control and emulate its prompt, this plug-in has some side
+effects.
+
+However, the side effects are avoidable, here are the guides to avoid them:
+
+### `gdb.event.before_prompt`
+
+The GDB Python API event: `gdb.event.before_prompt` may be called only once.
 
 So if you are using a GDB plug-in that is listening on this event, this plug-in will cause some bugs.
 
 > As far as I know, pwndbg and gef won't be bothered by this side effect now.
 
-To avoid this, you can change the callback function by adding them to `gdb.prompt_hook`, `gdb.prompt_hook` has almost the same effects with `event.before_prompt`, but `gdb.prompt_hook` can be directed invoke, so this plug-in still can emulate that callback for you!
+To avoid this, you can change the callback function by adding them to `gdb.prompt_hook`, `gdb.prompt_hook` has almost
+the same effects with `event.before_prompt`, but `gdb.prompt_hook` can be directed invoke, so this plug-in still can
+emulate that callback for you!
+
+### `dont-repeat`
+
+When your input is empty and directly press `ENTER`, GDB will execute the previous command from history if that command
+doesn't have the property: `dont-repeat`.
+
+As far as I know, there is no GDB API for checking a command's property.
+
+So, I added some commonly used commands (for original GDB API and GEF) which have that property in a list to avoid
+repeatedly executing them.
+
+If you have some user-defined function that has `dont-repeat` property, add your command into the list manually, too.
+
+> Note: The list is in `.gdbinit-gep.py` and the variable name is `DONT_REPEAT`.
+>
+> If you found some commands which should or shouldn't be added in that list, let me know on the issue page, thanks!
 
 ## Bugs, suggestions, and ideas
 
-If you found any bug or you have any suggestions/ideas about this plug-in, feel free to leave your feedback on the Github issue page or send me a pull request!
+If you found any bug, or you have any suggestions/ideas about this plug-in, feel free to leave your feedback on the
+GitHub issue page or send me a pull request!
 
 Thanks!
