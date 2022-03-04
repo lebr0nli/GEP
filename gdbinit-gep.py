@@ -26,7 +26,12 @@ from prompt_toolkit.application import run_in_terminal
 # global variables
 HAS_FZF = which('fzf') is not None
 HISTORY_FILENAME = '.gdb_history'
-from geprc import BINDINGS
+try:
+    from geprc import BINDINGS
+except ImportError:
+    from prompt_toolkit.key_binding import KeyBindings
+
+    BINDINGS = KeyBindings()
 
 
 # function for logging
