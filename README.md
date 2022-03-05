@@ -15,7 +15,7 @@ And also, GEP has some awesome features already, you can directly use it!
 
 ## Features
 
-- `Ctrl+R` for fzf history reverse search
+- `Ctrl+R` for [fzf](https://github.com/junegunn/fzf) history reverse search
 - `up-arrow` for partial string matching in history
 - `TAB` for auto-completion with floating window
 - [fish](https://fishshell.com)-like autosuggestions
