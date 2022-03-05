@@ -83,8 +83,9 @@ if HAS_FZF:
             fzf_cmd = '|'.join(fzf_cmd)
             p = Popen(fzf_cmd, shell=True, stdout=PIPE, text=True)
             stdout, _ = p.communicate()
-            event.app.current_buffer.delete_before_cursor(len(event.app.current_buffer.text))
-            event.app.current_buffer.insert_text(stdout.strip())
+            if stdout:
+                event.app.current_buffer.delete_before_cursor(len(event.app.current_buffer.text))
+                event.app.current_buffer.insert_text(stdout.strip())
 
         run_in_terminal(f)
 else:
