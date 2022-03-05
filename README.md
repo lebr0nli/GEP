@@ -2,7 +2,7 @@
 
 [![asciicast](https://asciinema.org/a/TJiEkHv3cqieR0XizG41uOg93.svg)](https://asciinema.org/a/TJiEkHv3cqieR0XizG41uOg93)
 
-`GEP` (GDB Enhanced Prompt) is a GDB plug-in which make your GDB console's prompt more convenient and flexibility.
+`GEP` (GDB Enhanced Prompt) is a GDB plug-in which make your GDB command prompt more convenient and flexibility.
 
 ## Why I need this plug-in?
 
@@ -18,7 +18,7 @@ And also, GEP has some awesome features already, you can directly use it!
 - `Ctrl+R` for fzf history reverse search
 - `up-arrow` for partial string matching in history
 - `TAB` for auto-completion with floating window
-- fish-like autosuggestions
+- [fish](https://fishshell.com)-like autosuggestions
 - has the ability to build custom key binding and its callback function by modifying `geprc.py`
 
 ## How to install it?
@@ -35,7 +35,7 @@ cd GEP && \
 sh install.sh
 ```
 
-> Note: This project is using [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit/tree/2.0) 2.0.10 (because IDK why prompt-toolkit 3 is not working with GDB Python API), so the `install.sh` will download `prompt_toolkit==2.0.10` to `~/GEP/`.
+> Note: This plug-in is using [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit/tree/2.0) 2.0.10 (because IDK why prompt-toolkit 3 is not working with GDB Python API), so the `install.sh` will download `prompt_toolkit==2.0.10` to `~/GEP/`.
 > Maybe we can build our prompt toolkit just for this plug-in in the future.
 
 3. Add `source ~/GEP/.gdbinit-gep` to the last line of your `~/.gdbinit`
