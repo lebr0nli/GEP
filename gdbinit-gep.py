@@ -99,7 +99,7 @@ class GDBHistory(FileHistory):
 
     def __init__(self, filename, ignore_duplicates=False):
         self.ignore_duplicates = ignore_duplicates
-        super(GDBHistory, self).__init__(filename=filename)
+        super().__init__(filename=filename)
 
     def load_history_strings(self):
         temp_strings = []
@@ -130,7 +130,7 @@ class GDBCompleter(Completer):
     """
 
     def __init__(self):
-        super(Completer, self).__init__()
+        super().__init__()
 
     def get_completions(self, document, complete_event):
         all_completions = gdb.execute(f'complete {document.text}', to_string=True).split('\n')
