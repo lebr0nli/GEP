@@ -133,6 +133,8 @@ class GDBCompleter(Completer):
         super().__init__()
 
     def get_completions(self, document, complete_event):
+        if document.text.strip() and document.text[-1].isspace():
+            return  # avoid "b<SPACE(s)><TAB>" showing "breakpoint".
         all_completions = gdb.execute(f'complete {document.text}', to_string=True).split('\n')
         all_completions.pop()  # remove empty line
         if all_completions and 'max-completions reached' in all_completions[-1]:
