@@ -172,6 +172,7 @@ class GDBConsoleWrapper:
         old_prompt_hook = gdb.prompt_hook
 
         def prompt_until_exit(current_prompt):
+            gdb.prompt_hook = old_prompt_hook  # retrieve old prompt hook 
             print_info('GEP is running now!')
             history_on = 'off' not in gdb.execute('show history save', to_string=True)
             if history_on:
@@ -194,7 +195,7 @@ class GDBConsoleWrapper:
             while True:
                 try:
                     # emulate the original prompt
-                    prompt_string = old_prompt_hook(current_prompt) if old_prompt_hook else None
+                    prompt_string = gdb.prompt_hook(current_prompt) if gdb.prompt_hook else None
                     if prompt_string is None:  # prompt string is set by gdb command
                         prompt_string = gdb.execute('show prompt', to_string=True)[16:-2]
                         prompt_string = prompt_string.replace('\\e', '\033')  # fix for color string
