@@ -4,6 +4,8 @@ import os
 import traceback
 import shlex
 import sys
+from string import ascii_letters
+from itertools import chain
 from shutil import which
 from subprocess import Popen, PIPE
 
@@ -133,14 +135,32 @@ class GDBCompleter(Completer):
         super().__init__()
 
     def get_completions(self, document, complete_event):
+        completions_limit = gdb.execute('show max-completions', to_string=True)[43:-2]
+        if completions_limit != 'unlimited':
+            completions_limit = int(completions_limit)
+        else:
+            completions_limit = 0xffffffff
+        if completions_limit == 0:
+            return
         if document.text.strip() and document.text[-1].isspace():
-            return  # avoid "b<SPACE(s)><TAB>" showing "breakpoint".
-        all_completions = gdb.execute(f'complete {document.text}', to_string=True).split('\n')
-        all_completions.pop()  # remove empty line
-        if all_completions and 'max-completions reached' in all_completions[-1]:
-            all_completions.pop()
+            all_completions = []
+            # fuzzing all possibles
+            for c in ascii_letters + "_-":
+                if completions_limit <= 0:
+                    break
+                completions = gdb.execute(f"complete {document.text + c}", to_string=True).split('\n')
+                completions.pop()  # remove empty line
+                if completions and ' *** List may be truncated, max-completions reached. ***' == completions[-1]:
+                    completions.pop()
+                all_completions = chain(all_completions, completions[:completions_limit])
+                completions_limit -= len(completions)
+        else:
+            all_completions = gdb.execute(f'complete {document.text}', to_string=True).split('\n')
+            all_completions.pop()  # remove empty line
+            if all_completions and ' *** List may be truncated, max-completions reached. ***' == all_completions[-1]:
+                all_completions.pop()
         for completion in all_completions:
-            yield Completion(completion.replace(document.text.strip(), ''), display=completion.split()[-1])
+            yield Completion(completion.replace(document.text.lstrip(), ''), display=completion.split()[-1])
 
 
 class GDBConsoleWrapper:
