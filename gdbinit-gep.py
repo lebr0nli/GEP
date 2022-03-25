@@ -13,7 +13,7 @@ from subprocess import Popen, PIPE
 directory, file = os.path.split(__file__)
 directory = os.path.expanduser(directory)
 directory = os.path.abspath(directory)
-sys.path.append(directory)
+sys.path.insert(0, directory)  # ensure GEP using prompt_toolkit 2.0.10
 
 # import prompt_toolkit 2.0.10 for GEP
 from prompt_toolkit import PromptSession
