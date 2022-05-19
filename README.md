@@ -27,32 +27,34 @@ Make sure you have GDB 8.0 or higher compiled with Python3.6+ bindings, then:
 
 1. Install fzf: [Installation](https://github.com/junegunn/fzf#installation)
 
-2. Download this plug-in and install it:
+2. Install this plug-in by:
 
 ```shell
-git clone https://github.com/lebr0nli/GEP.git && \
-cd GEP && \
-sh install.sh
+# via the install script
+## using curl
+$ bash -c "$(curl -fsSL https://raw.githubusercontent.com/lebr0nli/GEP/main/install.sh)"
+
+## using wget
+$ bash -c "$(wget https://raw.githubusercontent.com/lebr0nli/GEP/main/install.sh -O -)"
+
+# manually
+$ pip install --no-cache-dir --target="$HOME/GEP/" prompt_toolkit==2.0.10
+$ wget -O ~/GEP/.gdbinit-gep -q https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep
+$ wget -O ~/GEP/.gdbinit-gep.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py
+$ wget -O ~/GEP/geprc.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/geprc.py
+$ echo -e '\nsource ~/GEP/.gdbinit-gep\n' >> ~/.gdbinit
 ```
 
-> Note: This plug-in is using [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit/tree/2.0) 2.0.10 (because IDK why prompt-toolkit 3 is not working with GDB Python API), so the `install.sh` will download `prompt_toolkit==2.0.10` to `~/GEP/`.
+> Note: This plug-in is using [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit/tree/2.0) 2.0.10 (because IDK why prompt-toolkit 3 is not working with GDB Python API), so the `install.sh` will download `prompt_toolkit==2.0.10` to `$HOME/GEP/`.
 > Maybe we can build our prompt toolkit just for this plug-in in the future.
 
-3. Add `source ~/GEP/.gdbinit-gep` to the last line of your `~/.gdbinit`
-
-You can run:
-
-```shell
-echo 'source ~/GEP/.gdbinit-gep' >> ~/.gdbinit
-```
-
-4. Enjoy!
+3. Enjoy!
 
 ## For more configuration
 
-You can modify configuration about history and auto-completion in `~/GEP/.gdbinit-gep`.
+You can modify configuration about history and auto-completion in `$HOME/GEP/.gdbinit-gep`.
 
-You can also add your custom key bindings by modifying `~/GEP/geprc.py`.
+You can also add your custom key bindings by modifying `$HOME/GEP/geprc.py`.
 
 ## The trade-offs
 
@@ -88,6 +90,12 @@ If you have some user-defined function that has `dont-repeat` property, add your
 > Note: The list is in `.gdbinit-gep.py` and the variable name is `DONT_REPEAT`.
 >
 > If you found some commands which should or shouldn't be added in that list, let me know on the issue page, thanks!
+
+## Special thank
+
+Some ideas for the installation guide are inspired by [hugsy/gef](https://github.com/hugsy/gef).
+
+Thanks!
 
 ## Bugs, suggestions, and ideas
 
