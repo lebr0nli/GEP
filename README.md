@@ -45,7 +45,8 @@ $ wget -O ~/GEP/geprc.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/
 $ echo -e '\nsource ~/GEP/.gdbinit-gep\n' >> ~/.gdbinit
 ```
 
-> Note: This plug-in is using [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit/tree/2.0) 2.0.10 (because IDK why prompt-toolkit 3 is not working with GDB Python API), so the `install.sh` will download `prompt_toolkit==2.0.10` to `$HOME/GEP/`.
+> **Note**
+> This plug-in is using [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit/tree/2.0) 2.0.10 (because IDK why prompt-toolkit 3 is not working with GDB Python API), so the `install.sh` will download `prompt_toolkit==2.0.10` to `$HOME/GEP/`.
 > Maybe we can build our prompt toolkit just for this plug-in in the future.
 
 3. Enjoy!
@@ -69,6 +70,7 @@ The GDB Python API event: `gdb.event.before_prompt` may be called only once.
 
 So if you are using a GDB plug-in that is listening on this event, this plug-in will cause some bugs.
 
+> **Note**
 > As far as I know, pwndbg and gef won't be bothered by this side effect now.
 
 To avoid this, you can change the callback function by adding them to `gdb.prompt_hook`, `gdb.prompt_hook` has almost
@@ -87,7 +89,8 @@ repeatedly executing them.
 
 If you have some user-defined function that has `dont-repeat` property, add your command into the list manually, too.
 
-> Note: The list is in `.gdbinit-gep.py` and the variable name is `DONT_REPEAT`.
+> **Note**
+> The list is in `.gdbinit-gep.py` and the variable name is `DONT_REPEAT`.
 >
 > If you found some commands which should or shouldn't be added in that list, let me know on the issue page, thanks!
 
