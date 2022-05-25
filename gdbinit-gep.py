@@ -4,6 +4,7 @@ import os
 import traceback
 import shlex
 import sys
+import re
 from string import ascii_letters
 from itertools import chain
 from shutil import which
@@ -142,25 +143,27 @@ class GDBCompleter(Completer):
             completions_limit = 0xffffffff
         if completions_limit == 0:
             return
-        if document.text.strip() and document.text[-1].isspace():
+        if document.text_before_cursor.strip() and document.text_before_cursor[-1].isspace():
+            # fuzzing all possible commands if the text before cursor endswith space
             all_completions = []
-            # fuzzing all possibles
             for c in ascii_letters + "_-":
                 if completions_limit <= 0:
                     break
-                completions = gdb.execute(f"complete {document.text + c}", to_string=True).split('\n')
+                completions = gdb.execute(f"complete {document.text_before_cursor + c}", to_string=True).split('\n')
                 completions.pop()  # remove empty line
                 if completions and ' *** List may be truncated, max-completions reached. ***' == completions[-1]:
                     completions.pop()
                 all_completions = chain(all_completions, completions[:completions_limit])
                 completions_limit -= len(completions)
         else:
-            all_completions = gdb.execute(f'complete {document.text}', to_string=True).split('\n')
+            all_completions = gdb.execute(f'complete {document.text_before_cursor}', to_string=True).split('\n')
             all_completions.pop()  # remove empty line
             if all_completions and ' *** List may be truncated, max-completions reached. ***' == all_completions[-1]:
                 all_completions.pop()
         for completion in all_completions:
-            yield Completion(completion.replace(document.text.lstrip(), ''), display=completion.split()[-1])
+            completion = completion.replace(document.text_before_cursor.lstrip(), '')
+            display = re.split(r'\W+', document.text_before_cursor)[-1] + completion
+            yield Completion(completion, display=display)
 
 
 class GDBConsoleWrapper:
