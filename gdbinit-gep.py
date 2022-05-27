@@ -22,6 +22,7 @@ from prompt_toolkit.history import FileHistory, InMemoryHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.formatted_text import ANSI
 from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit import print_formatted_text
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.application import run_in_terminal
@@ -161,9 +162,19 @@ class GDBCompleter(Completer):
             if all_completions and ' *** List may be truncated, max-completions reached. ***' == all_completions[-1]:
                 all_completions.pop()
         for completion in all_completions:
+            display_meta = None
+            if ' ' not in completion:
+                # raw completion may be a command, try to show its description
+                try:
+                    display_meta = gdb.execute(f'help {completion}', to_string=True).strip() or None
+                except gdb.error:
+                    # this is not a command
+                    pass
+            # remove some prefix of raw completion
             completion = completion.replace(document.text_before_cursor.lstrip(), '')
+            # display readable completion based on the text before cursor
             display = re.split(r'\W+', document.text_before_cursor)[-1] + completion
-            yield Completion(completion, display=display)
+            yield Completion(completion, display=display, display_meta=display_meta)
 
 
 class GDBConsoleWrapper:
@@ -192,6 +203,7 @@ class GDBConsoleWrapper:
                 enable_history_search=True,
                 auto_suggest=AutoSuggestFromHistory(),
                 completer=GDBCompleter(),
+                complete_style=CompleteStyle.MULTI_COLUMN,
                 complete_while_typing=False,
                 key_bindings=BINDINGS
             )
