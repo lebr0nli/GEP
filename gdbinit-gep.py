@@ -26,6 +26,7 @@ from prompt_toolkit.shortcuts import CompleteStyle
 from prompt_toolkit import print_formatted_text
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.application import run_in_terminal
+from prompt_toolkit.document import Document
 
 # global variables
 HAS_FZF = which('fzf') is not None
@@ -76,7 +77,7 @@ if HAS_FZF:
         """ Reverse search history with fzf. """
 
         def f():
-            query = shlex.quote(event.app.current_buffer.text)
+            query = shlex.quote(event.app.current_buffer.document.text_before_cursor)
             global HISTORY_FILENAME
             if not os.path.exists(HISTORY_FILENAME):
                 # just create an empty file
@@ -88,7 +89,7 @@ if HAS_FZF:
             p = Popen(fzf_cmd, shell=True, stdout=PIPE, text=True)
             stdout, _ = p.communicate()
             if stdout:
-                event.app.current_buffer.delete_before_cursor(len(event.app.current_buffer.text))
+                event.app.current_buffer.document = Document()  # clear buffer
                 event.app.current_buffer.insert_text(stdout.strip())
 
         run_in_terminal(f)
