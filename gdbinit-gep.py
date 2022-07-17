@@ -204,7 +204,8 @@ class GDBConsoleWrapper:
                 enable_history_search=True,
                 auto_suggest=AutoSuggestFromHistory(),
                 completer=GDBCompleter(),
-                complete_style=CompleteStyle.MULTI_COLUMN,
+                # TODO: Add a parameter to switch complete style
+                # complete_style=CompleteStyle.MULTI_COLUMN, # the looking is not good for me
                 complete_while_typing=False,
                 key_bindings=BINDINGS
             )
