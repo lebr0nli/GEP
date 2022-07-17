@@ -83,7 +83,7 @@ if HAS_FZF:
                 # just create an empty file
                 with open(HISTORY_FILENAME, 'w'):
                     pass
-            fzf_cmd = [f"awk '!seen[$0]++' {HISTORY_FILENAME}"]
+            fzf_cmd = [f"awk '!seen[$0]++' {shlex.quote(HISTORY_FILENAME)}"]
             fzf_cmd += [f"fzf --tiebreak=index --no-multi --height=40% --layout=reverse --tac --query={query}"]
             fzf_cmd = '|'.join(fzf_cmd)
             p = Popen(fzf_cmd, shell=True, stdout=PIPE, text=True)
