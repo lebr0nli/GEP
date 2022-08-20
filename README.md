@@ -39,6 +39,7 @@ $ bash -c "$(wget https://raw.githubusercontent.com/lebr0nli/GEP/main/install.sh
 
 # manually
 $ pip install --no-cache-dir prompt_toolkit
+$ mkdir -p ~/GEP
 $ wget -O ~/GEP/.gdbinit-gep -q https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep
 $ wget -O ~/GEP/.gdbinit-gep.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py
 $ wget -O ~/GEP/geprc.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/geprc.py

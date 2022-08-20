@@ -12,6 +12,9 @@ else
     exit 1
 fi
 
+# create a folder for GEP
+mkdir -p ~/GEP/
+
 # check curl or wget
 if [ "$(which curl)" ]; then
     curl --silent --location https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep --output ~/GEP/.gdbinit-gep
