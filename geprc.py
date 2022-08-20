@@ -1,6 +1,5 @@
 from prompt_toolkit.key_binding import KeyBindings
 
-
 BINDINGS = KeyBindings()
 
 '''

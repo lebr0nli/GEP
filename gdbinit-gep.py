@@ -1,32 +1,24 @@
-import gdb
 import ast
 import os
-import traceback
+import re
 import shlex
 import sys
-import re
-from string import ascii_letters
+import traceback
 from itertools import chain
 from shutil import which
-from subprocess import Popen, PIPE
+from string import ascii_letters
+from subprocess import PIPE, Popen
 
-# setup import path
-directory, file = os.path.split(__file__)
-directory = os.path.expanduser(directory)
-directory = os.path.abspath(directory)
-sys.path.insert(0, directory)  # ensure GEP using prompt_toolkit 2.0.10
-
-# import prompt_toolkit 2.0.10 for GEP
-from prompt_toolkit import PromptSession
-from prompt_toolkit.history import FileHistory, InMemoryHistory
-from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-from prompt_toolkit.formatted_text import ANSI
-from prompt_toolkit.completion import Completer, Completion
-from prompt_toolkit.shortcuts import CompleteStyle
-from prompt_toolkit import print_formatted_text
-from prompt_toolkit.formatted_text import FormattedText
+import gdb
+from prompt_toolkit import PromptSession, print_formatted_text
 from prompt_toolkit.application import run_in_terminal
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.document import Document
+from prompt_toolkit.formatted_text import ANSI, FormattedText
+from prompt_toolkit.history import FileHistory, InMemoryHistory
+from prompt_toolkit.output import create_output
+# from prompt_toolkit.shortcuts import CompleteStyle
 
 # global variables
 HAS_FZF = which('fzf') is not None
@@ -63,11 +55,11 @@ except ImportError:
 
 # function for logging
 def print_info(s):
-    print_formatted_text(FormattedText([('#00FFFF', s)]))
+    print_formatted_text(FormattedText([('#00FFFF', s)]), file=sys.__stdout__)
 
 
 def print_warning(s):
-    print_formatted_text(FormattedText([('#FFCC00', s)]))
+    print_formatted_text(FormattedText([('#FFCC00', s)]), file=sys.__stdout__)
 
 
 # key binding for fzf history search
@@ -207,7 +199,8 @@ class GDBConsoleWrapper:
                 # TODO: Add a parameter to switch complete style
                 # complete_style=CompleteStyle.MULTI_COLUMN, # the looking is not good for me
                 complete_while_typing=False,
-                key_bindings=BINDINGS
+                key_bindings=BINDINGS,
+                output=create_output(stdout=sys.__stdout__)
             )
             while True:
                 try:

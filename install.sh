@@ -2,11 +2,11 @@
 
 # install prompt_toolkit
 if [ "$(which python3)" ]; then
-    python3 -m pip install --no-cache-dir --target="$HOME/GEP/" prompt_toolkit==2.0.10
+    python3 -m pip install --no-cache-dir prompt_toolkit
 elif [ "$(which python)" ]; then
-    python -m pip install --no-cache-dir --target="$HOME/GEP/" prompt_toolkit==2.0.10
+    python -m pip install --no-cache-dir prompt_toolkit
 elif [ "$(which pip)" ]; then
-    pip install --no-cache-dir --target="$HOME/GEP/" prompt_toolkit==2.0.10
+    pip install --no-cache-dir prompt_toolkit
 else
     echo "Can't find pip in your env, please install it and run again"
     exit 1

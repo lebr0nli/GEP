@@ -15,9 +15,9 @@ And also, GEP has some awesome features already, you can directly use it!
 
 ## Features
 
-- `Ctrl+R` for [fzf](https://github.com/junegunn/fzf) history reverse search
-- `up-arrow` for partial string matching in history
-- `TAB` for auto-completion with floating window
+- <kbd>Ctrl+R</kbd> for [fzf](https://github.com/junegunn/fzf) history reverse search
+- <kbd>up-arrow</kbd> for partial string matching in history
+- <kbd>TAB</kbd> for auto-completion with floating window
 - [fish](https://fishshell.com)-like autosuggestions
 - has the ability to build custom key binding and its callback function by modifying `geprc.py`
 
@@ -38,16 +38,12 @@ $ bash -c "$(curl -fsSL https://raw.githubusercontent.com/lebr0nli/GEP/main/inst
 $ bash -c "$(wget https://raw.githubusercontent.com/lebr0nli/GEP/main/install.sh -O -)"
 
 # manually
-$ pip install --no-cache-dir --target="$HOME/GEP/" prompt_toolkit==2.0.10
+$ pip install --no-cache-dir prompt_toolkit
 $ wget -O ~/GEP/.gdbinit-gep -q https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep
 $ wget -O ~/GEP/.gdbinit-gep.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py
 $ wget -O ~/GEP/geprc.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/geprc.py
 $ echo -e '\nsource ~/GEP/.gdbinit-gep\n' >> ~/.gdbinit
 ```
-
-> **Note**
-> This plug-in is using [prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit/tree/2.0) 2.0.10 (because IDK why prompt-toolkit 3 is not working with GDB Python API), so the `install.sh` will download `prompt_toolkit==2.0.10` to `$HOME/GEP/`.
-> Maybe we can build our prompt toolkit just for this plug-in in the future.
 
 3. Enjoy!
 
