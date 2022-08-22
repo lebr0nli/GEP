@@ -1,4 +1,3 @@
-import ast
 import os
 import re
 import shlex
@@ -130,10 +129,8 @@ class GDBCompleter(Completer):
         super().__init__()
 
     def get_completions(self, document, complete_event):
-        completions_limit = gdb.execute('show max-completions', to_string=True)[43:-2]
-        if completions_limit != 'unlimited':
-            completions_limit = int(completions_limit)
-        else:
+        completions_limit = gdb.parameter('max-completions')
+        if completions_limit == -1:
             completions_limit = 0xffffffff
         if completions_limit == 0:
             return
@@ -181,12 +178,11 @@ class GDBConsoleWrapper:
         def prompt_until_exit(current_prompt):
             gdb.prompt_hook = old_prompt_hook  # retrieve old prompt hook 
             print_info('GEP is running now!')
-            history_on = 'off' not in gdb.execute('show history save', to_string=True)
+            history_on = gdb.parameter('history save')
             if history_on:
                 global HISTORY_FILENAME
-                HISTORY_FILENAME = gdb.execute('show history filename', to_string=True)[55:-2]
-                HISTORY_FILENAME = ast.literal_eval(HISTORY_FILENAME)  # parse escape character
-                is_ignore_duplicates = "unlimited" in gdb.execute('show history remove-duplicates', to_string=True)
+                HISTORY_FILENAME = gdb.parameter('history filename')
+                is_ignore_duplicates = -1 == gdb.parameter('history remove-duplicates')
                 gdb_history = GDBHistory(HISTORY_FILENAME, ignore_duplicates=is_ignore_duplicates)
             else:
                 print_warning('`set history save on` for better experience with GEP')
@@ -207,9 +203,7 @@ class GDBConsoleWrapper:
                     # emulate the original prompt
                     prompt_string = gdb.prompt_hook(current_prompt) if gdb.prompt_hook else None
                     if prompt_string is None:  # prompt string is set by gdb command
-                        prompt_string = gdb.execute('show prompt', to_string=True)[16:-2]
-                        prompt_string = prompt_string.replace('\\e', '\033')  # fix for color string
-                        prompt_string = ast.literal_eval(prompt_string)  # parse escape character
+                        prompt_string = gdb.parameter('prompt')
                     prompt_string = prompt_string.replace('\001', '').replace('\002', '')  # fix for ANSI prompt
                     gdb_cmd = session.prompt(ANSI(prompt_string))
                     if not gdb_cmd.strip():
