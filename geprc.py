@@ -2,7 +2,7 @@ from prompt_toolkit.key_binding import KeyBindings
 
 BINDINGS = KeyBindings()
 
-'''
+"""
 # Don't modify the code above!
 # Append your key binding below!
 # For example:
@@ -17,4 +17,4 @@ def _(event):
     run_in_terminal(f)
 
 # For more example: https://python-prompt-toolkit.readthedocs.io/en/master/pages/asking_for_input.html#adding-custom-key-bindings
-'''
+"""
