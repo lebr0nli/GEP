@@ -74,8 +74,8 @@ if HAS_FZF:
                 # just create an empty file
                 with open(HISTORY_FILENAME, 'w'):
                     pass
-            fzf_cmd = [f"awk '!seen[$0]++' {shlex.quote(HISTORY_FILENAME)}"]
-            fzf_cmd += [f"fzf --tiebreak=index --no-multi --height=40% --layout=reverse --tac --query={query}"]
+            fzf_cmd = ["awk '!seen[$0]++' %s" % shlex.quote(HISTORY_FILENAME)]
+            fzf_cmd += ["fzf --tiebreak=index --no-multi --height=40% --layout=reverse --tac --query=%s" % query]
             fzf_cmd = '|'.join(fzf_cmd)
             p = Popen(fzf_cmd, shell=True, stdout=PIPE, text=True)
             stdout, _ = p.communicate()
@@ -140,14 +140,14 @@ class GDBCompleter(Completer):
             for c in ascii_letters + "_-":
                 if completions_limit <= 0:
                     break
-                completions = gdb.execute(f"complete {document.text_before_cursor + c}", to_string=True).split('\n')
+                completions = gdb.execute("complete %s" % document.text_before_cursor + c, to_string=True).split('\n')
                 completions.pop()  # remove empty line
                 if completions and ' *** List may be truncated, max-completions reached. ***' == completions[-1]:
                     completions.pop()
                 all_completions = chain(all_completions, completions[:completions_limit])
                 completions_limit -= len(completions)
         else:
-            all_completions = gdb.execute(f'complete {document.text_before_cursor}', to_string=True).split('\n')
+            all_completions = gdb.execute('complete %s' % document.text_before_cursor, to_string=True).split('\n')
             all_completions.pop()  # remove empty line
             if all_completions and ' *** List may be truncated, max-completions reached. ***' == all_completions[-1]:
                 all_completions.pop()
@@ -156,7 +156,7 @@ class GDBCompleter(Completer):
             if ' ' not in completion:
                 # raw completion may be a command, try to show its description
                 try:
-                    display_meta = gdb.execute(f'help {completion}', to_string=True).strip() or None
+                    display_meta = gdb.execute('help %s' % completion, to_string=True).strip() or None
                 except gdb.error:
                     # this is not a command
                     pass
