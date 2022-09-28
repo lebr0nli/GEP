@@ -80,7 +80,7 @@ if HAS_FZF:
                     pass
             fzf_cmd = ["awk '!seen[$0]++' %s" % shlex.quote(HISTORY_FILENAME)]
             fzf_cmd += [
-                "fzf --tiebreak=index --no-multi --height=40% --layout=reverse --tac --query=%s"
+                "fzf --tiebreak=index --no-multi --height=40%% --layout=reverse --tac --query=%s"
                 % query
             ]
             fzf_cmd = "|".join(fzf_cmd)
