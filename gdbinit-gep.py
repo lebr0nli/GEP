@@ -183,6 +183,8 @@ class GDBCompleter(Completer):
                 " " not in completion
                 or completion.startswith("set ")
                 or completion.startswith("show ")
+                or completion.startswith("info ")
+                or completion.startswith("i ")
             ):
                 # raw completion may be a command, try to show its description
                 try:
