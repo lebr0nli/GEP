@@ -177,24 +177,62 @@ class GDBCompleter(Completer):
                 == all_completions[-1]
             ):
                 all_completions.pop()
+
+        should_display_docstring = True
         for completion in all_completions:
             display_meta = None
-            if (
-                " " not in completion
-                or completion.startswith("set ")
-                or completion.startswith("show ")
-                or completion.startswith("info ")
-                or completion.startswith("i ")
-            ):
-                # raw completion may be a command, try to show its description
-                try:
+            try:
+                if (
+                    " " not in completion
+                    or completion.startswith("show ")
+                    or completion.startswith("info set ")
+                    or completion.startswith("inf set ")
+                    or completion.startswith("i set ")
+                ):
+                    # raw completion may be a command, try to show its docstring
+                    # also, `show <param>` is also a command, we try to show its docstring
+                    # Note: `info set <param>` is a alias of `show <param>`
                     display_meta = (
                         gdb.execute("help %s" % completion, to_string=True).strip()
                         or None
                     )
-                except gdb.error:
-                    # this is not a command
-                    pass
+                elif should_display_docstring:
+                    if (
+                        completion.startswith("set ")
+                        or completion.startswith("info ")
+                        or completion.startswith("inf ")
+                        or completion.startswith("i ")
+                    ):
+                        # `set <param-name>`, `info <param-name>` is also a command, we try to show its docstring
+                        display_meta = (
+                            gdb.execute("help %s" % completion, to_string=True).strip()
+                            or None
+                        )
+                        if display_meta and len(completion.split()) > 2:
+                            # when completion == `set foo bar`
+                            # check `set foo bar` is a subcommand of `set foo` or not, if not, `bar` is a value, we shouldn't show the docstring for it
+                            # but, there is no a good API to check it, so we just check the docstring contains keyword:
+                            # `Type "help set foo" followed by set foo subcommand name for full documentation.`
+                            # Note: `info` have the same problem
+                            normalize_command = completion.split()[:-1]
+                            if normalize_command[0] in ("inf", "i"):
+                                normalize_command[0] = "info"
+                            parent_command = " ".join(normalize_command)
+
+                            keyword = 'Type "help %s" followed by %s subcommand name for full documentation.' % (
+                                parent_command,
+                                parent_command,
+                            )
+                            parent_command_docstring = gdb.execute(
+                                "help %s" % parent_command, to_string=True
+                            )
+                            if keyword not in parent_command_docstring:
+                                display_meta = None
+                                # We don't need to do this check again, because all other completions have the same prefix
+                                should_display_docstring = False
+            except gdb.error:
+                # this is not a command
+                pass
             # remove some prefix of raw completion
             completion = completion.replace(document.text_before_cursor.lstrip(), "")
             # display readable completion based on the text before cursor
