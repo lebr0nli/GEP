@@ -92,6 +92,7 @@ if HAS_FZF:
 
         run_in_terminal(f)
 
+
 else:
     print_warning("Install fzf for better experience with GEP")
 
@@ -178,7 +179,11 @@ class GDBCompleter(Completer):
                 all_completions.pop()
         for completion in all_completions:
             display_meta = None
-            if " " not in completion:
+            if (
+                " " not in completion
+                or completion.startswith("set ")
+                or completion.startswith("show ")
+            ):
                 # raw completion may be a command, try to show its description
                 try:
                     display_meta = (
