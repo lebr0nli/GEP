@@ -184,10 +184,10 @@ class GDBCompleter(Completer):
             try:
                 if (
                     " " not in completion
-                    or completion.startswith("show ")
-                    or completion.startswith("info set ")
-                    or completion.startswith("inf set ")
-                    or completion.startswith("i set ")
+                    or re.match(r"^show\s", completion)
+                    or re.match(r"^info\s+set\s", completion)
+                    or re.match(r"^inf\s+set\s", completion)
+                    or re.match(r"^i\s+set\s", completion)
                 ):
                     # raw completion may be a command, try to show its docstring
                     # also, `show <param>` is also a command, we try to show its docstring
@@ -198,10 +198,10 @@ class GDBCompleter(Completer):
                     )
                 elif should_display_docstring:
                     if (
-                        completion.startswith("set ")
-                        or completion.startswith("info ")
-                        or completion.startswith("inf ")
-                        or completion.startswith("i ")
+                        re.match(r"^set\s", completion)
+                        or re.match(r"^info\s", completion)
+                        or re.match(r"^inf\s", completion)
+                        or re.match(r"^i\s", completion)
                     ):
                         # `set <param-name>`, `info <param-name>` is also a command, we try to show its docstring
                         display_meta = (
