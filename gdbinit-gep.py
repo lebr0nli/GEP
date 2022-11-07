@@ -307,3 +307,35 @@ class GDBConsoleWrapper:
 
 
 GDBConsoleWrapper()
+
+
+class UpdateGEPCommand(gdb.Command):
+    """
+    Update GEP to the latest version
+    """
+
+    def __init__(self):
+        super(UpdateGEPCommand, self).__init__("gep-update", gdb.COMMAND_NONE)
+
+    def invoke(self, arg, from_tty):
+        print_info("Updating GEP...")
+        gep_filename = os.path.expanduser("~/GEP/gdbinit-gep.py")
+        if not os.path.exists(gep_filename):
+            print_warning("GEP is not installed at %s, update aborted" % gep_filename)
+            return
+        with open(gep_filename, "r") as f:
+            import urllib.request
+
+            content = f.read()
+            remote_content = urllib.request.urlopen(
+                "https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py"
+            ).read()
+            if content == remote_content.decode("utf-8"):
+                print_info("GEP is already the latest version.")
+                return
+        with open(gep_filename, "w") as f:
+            f.write(remote_content.decode("utf-8"))
+        print_info("GEP is updated to the latest version.")
+
+
+UpdateGEPCommand()

@@ -48,6 +48,10 @@ $ echo -e '\nsource ~/GEP/.gdbinit-gep\n' >> ~/.gdbinit
 
 3. Enjoy!
 
+## How to update the version of GEP?
+
+In your GDB, use `gep-update` command, or you can manually use `wget` or `curl` to download the `.gdbinit-gep.py` again.
+
 ## For more configuration
 
 You can modify configuration about history and auto-completion in `$HOME/GEP/.gdbinit-gep`.
