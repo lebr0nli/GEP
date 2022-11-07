@@ -324,12 +324,17 @@ class UpdateGEPCommand(gdb.Command):
             print_warning("GEP is not installed at %s, update aborted" % gep_filename)
             return
         with open(gep_filename, "r") as f:
-            import urllib.request
+            try:
+                import urllib.request
 
-            content = f.read()
-            remote_content = urllib.request.urlopen(
-                "https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py"
-            ).read()
+                content = f.read()
+                remote_content = urllib.request.urlopen(
+                    "https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py"
+                ).read()
+            except Exception as e:
+                print(e)
+                print_warning("Failed to download GEP from Github")
+                return
             if content == remote_content.decode("utf-8"):
                 print_info("GEP is already the latest version.")
                 return
