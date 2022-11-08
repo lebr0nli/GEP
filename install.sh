@@ -35,6 +35,8 @@ if [ -f ~/.gdbinit ]; then
 fi
 
 # append gep to gdbinit
-echo -e '\nsource ~/GEP/.gdbinit-gep\n' >> ~/.gdbinit
+if ! grep -q gep ~/.gdbinit; then
+    echo -e '\nsource ~/GEP/.gdbinit-gep\n' >> ~/.gdbinit
+fi
 
 exit 0
