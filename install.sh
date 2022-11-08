@@ -29,9 +29,13 @@ else
     exit 1
 fi
 
-# backup gdbinit
+
 if [ -f ~/.gdbinit ]; then
+    # backup gdbinit if exists
     cp ~/.gdbinit ~/.gdbinit.old
+else
+    # create gdbinit if not exists
+    touch ~/.gdbinit
 fi
 
 # append gep to gdbinit
