@@ -8,6 +8,7 @@ set history remove-duplicates unlimited
 # set history filename ~/.gdb_history
 
 # set completions limit (default is 200)
+# Note: Set it to unlimited is not a good idea for large projects
 # set max-completions unlimited
 
 # Load the plug-in
