@@ -2,6 +2,12 @@ from prompt_toolkit.key_binding import KeyBindings
 
 BINDINGS = KeyBindings()
 
+DONT_REAPT = {
+    # your functions:
+    # 'foo',
+    # 'bar'
+}
+
 """
 # Don't modify the code above!
 # Append your key binding below!

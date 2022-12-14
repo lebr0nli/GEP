@@ -27,7 +27,7 @@ HISTORY_FILENAME = ".gdb_history"
 # I just collect some common used commands which should not be repeated.
 # If you have some user-define function, add your command into the list manually.
 # If you found a command should/shouldn't in this list, please let me know on the issue page, thanks!
-DONT_REPEAT = [
+DONT_REPEAT = {
     # original GDB
     "attach",
     "run",
@@ -43,12 +43,13 @@ DONT_REPEAT = [
     "functions",
     "gef",
     "tmux-setup",
-    # your functions:
-    # 'foo',
-    # 'bar'
-]
+}
+
 try:
     from geprc import BINDINGS
+    from geprc import DONT_REPEAT as DONT_REPEAT_USER
+
+    DONT_REPEAT = DONT_REPEAT.union(DONT_REPEAT_USER)
 except ImportError:
     from prompt_toolkit.key_binding import KeyBindings
 
@@ -91,7 +92,6 @@ if HAS_FZF:
                 event.app.current_buffer.insert_text(stdout.strip())
 
         run_in_terminal(f)
-
 
 else:
     print_warning("Install fzf for better experience with GEP")
@@ -219,9 +219,12 @@ class GDBCompleter(Completer):
                                 normalize_command[0] = "info"
                             parent_command = " ".join(normalize_command)
 
-                            keyword = 'Type "help %s" followed by %s subcommand name for full documentation.' % (
-                                parent_command,
-                                parent_command,
+                            keyword = (
+                                'Type "help %s" followed by %s subcommand name for full documentation.'
+                                % (
+                                    parent_command,
+                                    parent_command,
+                                )
                             )
                             parent_command_docstring = gdb.execute(
                                 "help %s" % parent_command, to_string=True
@@ -319,7 +322,7 @@ class UpdateGEPCommand(gdb.Command):
 
     def invoke(self, arg, from_tty):
         print_info("Updating GEP...")
-        gep_filename = os.path.expanduser("~/GEP/gdbinit-gep.py")
+        gep_filename = os.path.expanduser("~/GEP/.gdbinit-gep.py")
         if not os.path.exists(gep_filename):
             print_warning("GEP is not installed at %s, update aborted" % gep_filename)
             return

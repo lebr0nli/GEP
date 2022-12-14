@@ -85,13 +85,13 @@ doesn't have the property: `dont-repeat`.
 
 As far as I know, there is no GDB API for checking a command's property.
 
-So, I added some commonly used commands (for original GDB API and GEF) which have that property in a list to avoid
+So, I added some commonly used commands (for original GDB API and GEF) which have that property in a set to avoid
 repeatedly executing them.
 
-If you have some user-defined function that has `dont-repeat` property, add your command into the list manually, too.
+If you have some user-defined function that has `dont-repeat` property, add your command into the set manually, too.
 
 > **Note**
-> The list is in `.gdbinit-gep.py` and the variable name is `DONT_REPEAT`.
+> The set of those commands are in `geprc.py` and the variable name for it is `DONT_REPEAT`.
 >
 > If you found some commands which should or shouldn't be added in that list, let me know on the issue page, thanks!
 
