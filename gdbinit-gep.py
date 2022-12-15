@@ -47,9 +47,9 @@ DONT_REPEAT = {
 
 try:
     from geprc import BINDINGS
-    from geprc import DONT_REPEAT as DONT_REPEAT_USER
+    from geprc import DONT_REPEAT as USER_DONT_REPEAT
 
-    DONT_REPEAT = DONT_REPEAT.union(DONT_REPEAT_USER)
+    DONT_REPEAT = DONT_REPEAT.union(USER_DONT_REPEAT)
 except ImportError:
     from prompt_toolkit.key_binding import KeyBindings
 
