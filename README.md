@@ -80,7 +80,7 @@ emulate that callback for you!
 
 ### `dont-repeat`
 
-When your input is empty and directly press `ENTER`, GDB will execute the previous command from history if that command
+When your input is empty and directly press <kbd>ENTER</kbd>, GDB will execute the previous command from history if that command
 doesn't have the property: `dont-repeat`.
 
 As far as I know, there is no GDB API for checking a command's property.
@@ -91,9 +91,9 @@ repeatedly executing them.
 If you have some user-defined function that has `dont-repeat` property, add your command into the set manually, too.
 
 > **Note**
-> The set of those commands are in `geprc.py` and the variable name for it is `DONT_REPEAT`.
+> The set of those user-defined commands are in `geprc.py` and the variable name for it is `DONT_REPEAT`.
 >
-> If you found some commands which should or shouldn't be added in that list, let me know on the issue page, thanks!
+> If you found some builtin commands which should or shouldn't be added by default, let me know on the issue page, thanks!
 
 ## Special thank
 
