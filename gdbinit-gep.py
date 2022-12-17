@@ -17,8 +17,7 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.formatted_text import ANSI, FormattedText
 from prompt_toolkit.history import FileHistory, InMemoryHistory
 from prompt_toolkit.output import create_output
-
-# from prompt_toolkit.shortcuts import CompleteStyle
+from prompt_toolkit.shortcuts import CompleteStyle
 
 # global variables
 HAS_FZF = which("fzf") is not None
@@ -64,6 +63,54 @@ def print_info(s):
 def print_warning(s):
     print_formatted_text(FormattedText([("#FFCC00", s)]), file=sys.__stdout__)
 
+
+class UserParamater(gdb.Parameter):
+    gep_loaded = False
+
+    def __init__(
+        self,
+        name,
+        default_value,
+        set_show_doc,
+        parameter_class,
+        help_doc="",
+        enum_sequence=None,
+    ):
+        self.set_show_doc = set_show_doc
+        self.set_doc = "Set %s." % self.set_show_doc
+        self.show_doc = "Show %s." % self.set_show_doc
+        self.__doc__ = help_doc.strip() or None
+        if enum_sequence:
+            super().__init__(name, gdb.COMMAND_NONE, parameter_class, enum_sequence)
+        else:
+            super().__init__(name, gdb.COMMAND_NONE, parameter_class)
+        self.value = default_value
+
+    def get_set_string(self):
+        if not self.gep_loaded:
+            return ""
+        svalue = self.value
+        # TODO: Support other type when needed
+        if isinstance(svalue, bool):
+            svalue = "on" if svalue else "off"
+        return "Set %s to %r." % (self.set_show_doc, svalue)
+
+    def get_show_string(self, svalue):
+        if not self.gep_loaded:
+            return ""
+        return "%s is %r." % (self.set_show_doc.capitalize(), svalue)
+
+
+ctrl_c_quit = UserParamater(
+    "ctrl-c-quit", False, "whether to use ctrl-c to exit the gdb", gdb.PARAM_BOOLEAN
+)
+
+single_column_tab_complete = UserParamater(
+    "single-column-tab-complete",
+    True,
+    "whether to use single column for tab completion",
+    gdb.PARAM_BOOLEAN,
+)
 
 # key binding for fzf history search
 if HAS_FZF:
@@ -254,6 +301,7 @@ class GDBConsoleWrapper:
         def prompt_until_exit(current_prompt):
             gdb.prompt_hook = old_prompt_hook  # retrieve old prompt hook
             print_info("GEP is running now!")
+            UserParamater.gep_loaded = True
             history_on = gdb.parameter("history save")
             if history_on:
                 global HISTORY_FILENAME
@@ -270,8 +318,9 @@ class GDBConsoleWrapper:
                 enable_history_search=True,
                 auto_suggest=AutoSuggestFromHistory(),
                 completer=GDBCompleter(),
-                # TODO: Add a parameter to switch complete style
-                # complete_style=CompleteStyle.MULTI_COLUMN, # the looking is not good for me
+                complete_style=CompleteStyle.COLUMN
+                if single_column_tab_complete.value
+                else CompleteStyle.MULTI_COLUMN,
                 complete_while_typing=False,
                 key_bindings=BINDINGS,
                 output=create_output(stdout=sys.__stdout__),
@@ -300,7 +349,10 @@ class GDBConsoleWrapper:
                     gdb.execute(gdb_cmd, from_tty=True)
                 except gdb.error as e:
                     print(e)
-                except (EOFError, KeyboardInterrupt):
+                except KeyboardInterrupt:
+                    if ctrl_c_quit.value:
+                        gdb.execute("quit")
+                except EOFError:
                     gdb.execute("quit")
                 except Exception as e:
                     print(e)

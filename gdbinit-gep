@@ -13,3 +13,13 @@ set history remove-duplicates unlimited
 
 # Load the plug-in
 source ~/GEP/.gdbinit-gep.py
+
+
+# Set whether to use single column for tab completion
+# defulat: on
+# set single-column-tab-complete off
+
+
+# Set whether to use ctrl-c to exit the gdb
+# defulat: off
+# set ctrl-c-quit on

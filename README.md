@@ -54,7 +54,7 @@ In your GDB, use `gep-update` command, or you can manually use `wget` or `curl` 
 
 ## For more configuration
 
-You can modify configuration about history and auto-completion in `$HOME/GEP/.gdbinit-gep`.
+You can modify the configuration for history, auto-completion, and other GEP configurations in `$HOME/GEP/.gdbinit-gep`.
 
 You can also add your custom key bindings by modifying `$HOME/GEP/geprc.py`.
 
