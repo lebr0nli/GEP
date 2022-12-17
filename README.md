@@ -15,10 +15,10 @@ And also, GEP has some awesome features already, you can directly use it!
 
 ## Features
 
-- <kbd>Ctrl+R</kbd> for [fzf](https://github.com/junegunn/fzf) history reverse search
-- <kbd>up-arrow</kbd> for partial string matching in history
+- <kbd>Ctrl+r</kbd> for [fzf](https://github.com/junegunn/fzf) history reverse search
+- <kbd>↑</kbd> key for partial string matching in history
 - <kbd>TAB</kbd> for auto-completion with floating window
-- [fish](https://fishshell.com)-like autosuggestions
+- [fish](https://fishshell.com)-like autosuggestions (<kbd>→</kbd> key to accept the suggestion)
 - has the ability to build custom key binding and its callback function by modifying `geprc.py`
 
 ## How to install it?
