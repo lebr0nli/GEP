@@ -9,7 +9,6 @@ DONT_REAPT = {
 }
 
 """
-# Don't modify the code above!
 # Append your key binding below!
 # For example:
 
