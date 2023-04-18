@@ -1,6 +1,5 @@
 import os
 import re
-import shlex
 import sys
 import traceback
 from itertools import chain
@@ -16,6 +15,7 @@ from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.document import Document
 from prompt_toolkit.formatted_text import ANSI, FormattedText
 from prompt_toolkit.history import FileHistory, InMemoryHistory
+from prompt_toolkit.key_binding import KeyPressEvent
 from prompt_toolkit.output import create_output
 from prompt_toolkit.shortcuts import CompleteStyle
 
@@ -116,23 +116,32 @@ single_column_tab_complete = UserParamater(
 if HAS_FZF:
 
     @BINDINGS.add("c-r")
-    def _(event):
+    def _(event: KeyPressEvent):
         """Reverse search history with fzf."""
 
         def f():
-            query = shlex.quote(event.app.current_buffer.document.text_before_cursor)
             global HISTORY_FILENAME
             if not os.path.exists(HISTORY_FILENAME):
                 # just create an empty file
                 with open(HISTORY_FILENAME, "w"):
                     pass
-            fzf_cmd = ["awk '!seen[$0]++' %s" % shlex.quote(HISTORY_FILENAME)]
-            fzf_cmd += [
-                "fzf --tiebreak=index --no-multi --height=40%% --layout=reverse --tac --query=%s"
-                % query
-            ]
-            fzf_cmd = "|".join(fzf_cmd)
-            p = Popen(fzf_cmd, shell=True, stdout=PIPE, text=True)
+            fzf_cmd = (
+                "fzf",
+                "--tiebreak=index",
+                "--no-multi",
+                "--height=40%",
+                "--layout=reverse",
+                "--query",
+            )
+            fzf_cmd += (event.app.current_buffer.document.text_before_cursor,)
+            p = Popen(fzf_cmd, stdin=PIPE, stdout=PIPE, text=True)
+            with open(HISTORY_FILENAME) as f:
+                visited = set()
+                # Reverse the history, and only keep the youngest and unique one
+                for line in f.read().strip().split("\n")[::-1]:
+                    if line and not line in visited:
+                        visited.add(line)
+                        p.stdin.write(line + "\n")
             stdout, _ = p.communicate()
             if stdout:
                 event.app.current_buffer.document = Document()  # clear buffer
