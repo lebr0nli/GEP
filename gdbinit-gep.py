@@ -203,13 +203,15 @@ def fzf_tab_autocomplete(event: KeyPressEvent):
             return
 
         flag = should_get_help_docs(first_completion)
+        query = re.split(r"\W+", text_before_cursor)[-1]
         p = create_fzf_process(
-            text_before_cursor,
+            query,
             PREVIEW_CMD_TMPL % (FIFO_INPUT_PATH, FIFO_OUTPUT_PATH) if flag else None,
         )
         completion_help_docs = {}
+        cursor_idx_in_completion = len(text_before_cursor.lstrip())
         for i, completion in enumerate(chain([first_completion], all_completions)):
-            p.stdin.write(completion + "\n")
+            p.stdin.write(query + completion[cursor_idx_in_completion:] + "\n")
             if flag:
                 completion_help_docs[i] = safe_get_help_docs(completion)
         t = FzfTabCompletePreviewThread(
@@ -219,8 +221,9 @@ def fzf_tab_autocomplete(event: KeyPressEvent):
         stdout, _ = p.communicate()
         t.stop()
         if stdout:
-            event.app.current_buffer.document = Document()
-            event.app.current_buffer.insert_text(stdout.strip())
+            # append the rest of the completion after the query
+            query_len = len(query)
+            event.app.current_buffer.insert_text(stdout[query_len:].strip())
 
     run_in_terminal(_fzf_tab_autocomplete)
 
@@ -370,7 +373,9 @@ class GDBCompleter(Completer):
         super().__init__()
 
     def get_completions(self, document, complete_event):
-        all_completions = get_gdb_completes(document.text_before_cursor)
+        text_before_cursor = document.text_before_cursor
+        cursor_idx_in_completion = len(text_before_cursor.lstrip())
+        all_completions = get_gdb_completes(text_before_cursor)
         first_completion = next(all_completions, None)
         if not first_completion:
             return
@@ -379,9 +384,9 @@ class GDBCompleter(Completer):
         for completion in chain([first_completion], all_completions):
             display_meta = None if not flag else safe_get_help_docs(completion) or None
             # remove some prefix of raw completion
-            completion = completion.replace(document.text_before_cursor.lstrip(), "")
+            completion = completion[cursor_idx_in_completion:]
             # display readable completion based on the text before cursor
-            display = re.split(r"\W+", document.text_before_cursor)[-1] + completion
+            display = re.split(r"\W+", text_before_cursor)[-1] + completion
             yield Completion(completion, display=display, display_meta=display_meta)
 
 
