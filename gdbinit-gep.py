@@ -412,7 +412,7 @@ class GDBConsoleWrapper:
                 history=gdb_history,
                 enable_history_search=True,
                 auto_suggest=AutoSuggestFromHistory(),
-                completer=GDBCompleter(),
+                completer=GDBCompleter() if not HAS_FZF else None,
                 complete_style=CompleteStyle.COLUMN
                 if single_column_tab_complete.value
                 else CompleteStyle.MULTI_COLUMN,
