@@ -1,12 +1,16 @@
+import atexit
 import os
 import re
+import shutil
 import sys
+import tempfile
+import threading
 import traceback
 from itertools import chain
 from shutil import which
 from string import ascii_letters
 from subprocess import PIPE, Popen
-from typing import Iterable, Optional
+from typing import Dict, Iterable, Optional
 
 import gdb
 from prompt_toolkit import PromptSession, print_formatted_text
@@ -44,6 +48,24 @@ DONT_REPEAT = {
     "gef",
     "tmux-setup",
 }
+
+FZF_RUN_CMD = (
+    "fzf",
+    "--select-1",
+    "--exit-0",
+    "--no-multi",
+    "--tiebreak=index",
+    "--no-multi",
+    "--height=40%",
+    "--layout=reverse",
+)
+
+FZF_PRVIEW_WINDOW_ARGS = (
+    "--preview-window",
+    "right:55%:wrap",
+)
+
+PREVIEW_CMD_TMPL = "echo {n} > %s\ncat %s"
 
 try:
     from geprc import BINDINGS
@@ -111,6 +133,84 @@ def should_get_help_docs(completion: str) -> bool:
     return safe_get_help_docs(parent_command) != safe_get_help_docs(completion)
 
 
+def create_fzf_process(query, preview: str = "") -> Popen:
+    """
+    Create a fzf process with given query and preview command.
+    """
+    if not HAS_FZF:
+        raise ValueError("fzf is not installed")
+    if query.startswith("!"):
+        # ! in the beginning of query means we want to run the command directly for fzf
+        query = "^" + query
+    cmd = FZF_RUN_CMD + ("--query", query)
+    if preview:
+        cmd += FZF_PRVIEW_WINDOW_ARGS
+        cmd += ("--preview", preview)
+    return Popen(cmd, stdin=PIPE, stdout=PIPE, text=True)
+
+
+def create_preview_fifos():
+    """
+    Create a temporary directory and two FIFOs in it.
+
+    This is modified from:
+    https://github.com/infokiller/config-public/blob/652b4638a0a0ffed9743fa9e0ad2a8d4e4e90572/.config/ipython/profile_default/startup/ext/fzf_history.py#L128
+    """
+    fifo_dir = tempfile.mkdtemp(prefix="gep_tab_fzf_")
+    fifo_input_path = os.path.join(fifo_dir, "input")
+    fifo_output_path = os.path.join(fifo_dir, "output")
+    os.mkfifo(fifo_input_path)
+    os.mkfifo(fifo_output_path)
+    atexit.register(shutil.rmtree, fifo_dir)
+    return fifo_input_path, fifo_output_path
+
+
+class FzfTabCompletePreviewThread(threading.Thread):
+    """
+    A thread for previewing help docs of selected completion with fzf.
+
+    This is modified from:
+    https://github.com/infokiller/config-public/blob/master/.config/ipython/profile_default/startup/ext/fzf_history.py#L72
+    """
+
+    def __init__(
+        self,
+        fifo_input_path: str,
+        fifo_output_path: str,
+        completion_help_docs: Dict,
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.fifo_input_path = fifo_input_path
+        self.fifo_output_path = fifo_output_path
+        self.completion_help_docs = completion_help_docs
+        self.is_done = threading.Event()
+
+    def run(self) -> None:
+        while not self.is_done.is_set():
+            with open(self.fifo_input_path, encoding="utf-8") as fifo_input:
+                while not self.is_done.is_set():
+                    data = fifo_input.read()
+                    if len(data) == 0:
+                        break
+                    with open(
+                        self.fifo_output_path, "w", encoding="utf-8"
+                    ) as fifo_output:
+                        try:
+                            idx = int(data)
+                        except ValueError:
+                            continue
+                        help_doc = self.completion_help_docs.get(idx)
+                        if help_doc is not None:
+                            fifo_output.write(help_doc)
+
+    def stop(self):
+        self.is_done.set()
+        with open(self.fifo_input_path, "w", encoding="utf-8") as f:
+            f.close()
+        self.join()
+
+
 class UserParamater(gdb.Parameter):
     gep_loaded = False
 
@@ -163,25 +263,16 @@ single_column_tab_complete = UserParamater(
 if HAS_FZF:
 
     @BINDINGS.add("c-r")
-    def _(event: KeyPressEvent):
+    def fzf_reverse_search(event: KeyPressEvent):
         """Reverse search history with fzf."""
 
-        def f():
+        def _fzf_reverse_search():
             global HISTORY_FILENAME
             if not os.path.exists(HISTORY_FILENAME):
                 # just create an empty file
                 with open(HISTORY_FILENAME, "w"):
                     pass
-            fzf_cmd = (
-                "fzf",
-                "--tiebreak=index",
-                "--no-multi",
-                "--height=40%",
-                "--layout=reverse",
-                "--query",
-            )
-            fzf_cmd += (event.app.current_buffer.document.text_before_cursor,)
-            p = Popen(fzf_cmd, stdin=PIPE, stdout=PIPE, text=True)
+            p = create_fzf_process(event.app.current_buffer.document.text_before_cursor)
             with open(HISTORY_FILENAME) as f:
                 visited = set()
                 # Reverse the history, and only keep the youngest and unique one
@@ -194,7 +285,42 @@ if HAS_FZF:
                 event.app.current_buffer.document = Document()  # clear buffer
                 event.app.current_buffer.insert_text(stdout.strip())
 
-        run_in_terminal(f)
+        run_in_terminal(_fzf_reverse_search)
+
+    FIFO_INPUT_PATH, FIFO_OUTPUT_PATH = create_preview_fifos()
+
+    @BINDINGS.add("c-i")
+    def fzf_tab_autocomplete(event: KeyPressEvent):
+        def _fzf_tab_autocomplete():
+            text_before_cursor = event.app.current_buffer.document.text_before_cursor
+            all_completions = get_gdb_completes(text_before_cursor)
+            first_completion = next(all_completions, None)
+            if not first_completion:
+                return
+
+            flag = should_get_help_docs(first_completion)
+            p = create_fzf_process(
+                text_before_cursor,
+                PREVIEW_CMD_TMPL % (FIFO_INPUT_PATH, FIFO_OUTPUT_PATH)
+                if flag
+                else None,
+            )
+            completion_help_docs = {}
+            for i, completion in enumerate(chain([first_completion], all_completions)):
+                p.stdin.write(completion + "\n")
+                if flag:
+                    completion_help_docs[i] = safe_get_help_docs(completion)
+            t = FzfTabCompletePreviewThread(
+                FIFO_INPUT_PATH, FIFO_OUTPUT_PATH, completion_help_docs
+            )
+            t.start()
+            stdout, _ = p.communicate()
+            t.stop()
+            if stdout:
+                event.app.current_buffer.document = Document()
+                event.app.current_buffer.insert_text(stdout.strip())
+
+        run_in_terminal(_fzf_tab_autocomplete)
 
 else:
     print_warning("Install fzf for better experience with GEP")
