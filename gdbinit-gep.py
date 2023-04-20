@@ -65,8 +65,6 @@ FZF_PRVIEW_WINDOW_ARGS = (
     "right:55%:wrap",
 )
 
-PREVIEW_CMD_TMPL = "echo {n} > %s\ncat %s"
-
 try:
     from geprc import BINDINGS
     from geprc import DONT_REPEAT as USER_DONT_REPEAT
@@ -218,10 +216,7 @@ def fzf_tab_autocomplete(event: KeyPressEvent):
             return
         query = re.split(r"\W+", text_before_cursor)[-1]
         p = create_fzf_process(
-            query,
-            PREVIEW_CMD_TMPL % (FIFO_INPUT_PATH, FIFO_OUTPUT_PATH)
-            if should_get_all_help_docs
-            else None,
+            query, FZF_PRVIEW_CMD if should_get_all_help_docs else None
         )
         completion_help_docs = {}
         cursor_idx_in_completion = len(text_before_cursor.lstrip())
@@ -342,6 +337,7 @@ if HAS_FZF:
     BINDINGS.add("c-r")(fzf_reverse_search)
     # key binding for fzf tab completion
     FIFO_INPUT_PATH, FIFO_OUTPUT_PATH = create_preview_fifos()
+    FZF_PRVIEW_CMD = "echo {n} > %s\ncat %s" % (FIFO_INPUT_PATH, FIFO_OUTPUT_PATH)
     BINDINGS.add("c-i")(fzf_tab_autocomplete)
 else:
     print_warning("Install fzf for better experience with GEP")
