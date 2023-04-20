@@ -10,7 +10,7 @@ from itertools import chain
 from shutil import which
 from string import ascii_letters
 from subprocess import PIPE, Popen
-from typing import Dict, Iterable, Optional
+from typing import Dict, Iterable, Optional, Tuple
 
 import gdb
 from prompt_toolkit import PromptSession, print_formatted_text
@@ -133,6 +133,18 @@ def should_get_help_docs(completion: str) -> bool:
     return safe_get_help_docs(parent_command) != safe_get_help_docs(completion)
 
 
+def get_gdb_completion_and_status(query: str) -> Tuple[Iterable[str], bool]:
+    all_completions = get_gdb_completes(query)
+    # peek the first completion
+    first_completion = next(all_completions, None)
+    should_get_all_help_docs = False
+    if first_completion:
+        # restore the iterator
+        all_completions = chain([first_completion], all_completions)
+        should_get_all_help_docs = should_get_help_docs(first_completion)
+    return all_completions, should_get_all_help_docs, first_completion is None
+
+
 def create_fzf_process(query, preview: str = "") -> Popen:
     """
     Create a fzf process with given query and preview command.
@@ -197,22 +209,25 @@ def fzf_tab_autocomplete(event: KeyPressEvent):
 
     def _fzf_tab_autocomplete():
         text_before_cursor = event.app.current_buffer.document.text_before_cursor
-        all_completions = get_gdb_completes(text_before_cursor)
-        first_completion = next(all_completions, None)
-        if not first_completion:
+        (
+            all_completions,
+            should_get_all_help_docs,
+            is_empty,
+        ) = get_gdb_completion_and_status(text_before_cursor)
+        if is_empty:
             return
-
-        flag = should_get_help_docs(first_completion)
         query = re.split(r"\W+", text_before_cursor)[-1]
         p = create_fzf_process(
             query,
-            PREVIEW_CMD_TMPL % (FIFO_INPUT_PATH, FIFO_OUTPUT_PATH) if flag else None,
+            PREVIEW_CMD_TMPL % (FIFO_INPUT_PATH, FIFO_OUTPUT_PATH)
+            if should_get_all_help_docs
+            else None,
         )
         completion_help_docs = {}
         cursor_idx_in_completion = len(text_before_cursor.lstrip())
-        for i, completion in enumerate(chain([first_completion], all_completions)):
+        for i, completion in enumerate(all_completions):
             p.stdin.write(query + completion[cursor_idx_in_completion:] + "\n")
-            if flag:
+            if should_get_all_help_docs:
                 completion_help_docs[i] = safe_get_help_docs(completion)
         t = FzfTabCompletePreviewThread(
             FIFO_INPUT_PATH, FIFO_OUTPUT_PATH, completion_help_docs
@@ -375,14 +390,20 @@ class GDBCompleter(Completer):
     def get_completions(self, document, complete_event):
         text_before_cursor = document.text_before_cursor
         cursor_idx_in_completion = len(text_before_cursor.lstrip())
-        all_completions = get_gdb_completes(text_before_cursor)
-        first_completion = next(all_completions, None)
-        if not first_completion:
+        (
+            all_completions,
+            should_get_all_help_docs,
+            is_empty,
+        ) = get_gdb_completion_and_status(text_before_cursor)
+        if is_empty:
             return
 
-        flag = should_get_help_docs(first_completion)
-        for completion in chain([first_completion], all_completions):
-            display_meta = None if not flag else safe_get_help_docs(completion) or None
+        for completion in all_completions:
+            display_meta = (
+                None
+                if not should_get_all_help_docs
+                else safe_get_help_docs(completion) or None
+            )
             # remove some prefix of raw completion
             completion = completion[cursor_idx_in_completion:]
             # display readable completion based on the text before cursor
