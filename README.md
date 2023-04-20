@@ -15,9 +15,11 @@ And also, GEP has some awesome features already, you can directly use it!
 
 ## Features
 
-- <kbd>Ctrl+r</kbd> for [fzf](https://github.com/junegunn/fzf) history reverse search
+- <kbd>Ctrl</kbd>+<kbd>r</kbd> for [fzf](https://github.com/junegunn/fzf) history reverse search
 - <kbd>↑</kbd> key for partial string matching in history
-- <kbd>TAB</kbd> for auto-completion with floating window
+- <kbd>TAB</kbd> for auto-completion with:
+  - fzf (When fzf is installed)
+  - floating window (Similar to IPython's auto-completion)
 - [fish](https://fishshell.com)-like autosuggestions (<kbd>→</kbd> key to accept the suggestion)
 - has the ability to build custom key binding and its callback function by modifying `geprc.py`
 
