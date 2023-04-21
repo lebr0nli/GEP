@@ -406,112 +406,131 @@ class GDBCompleter(Completer):
             yield Completion(completion, display=display, display_meta=display_meta)
 
 
-class GDBConsoleWrapper:
-    """
-    Wrapper of original GDB console
-    """
-
-    def __init__(self):
-        old_prompt_hook = gdb.prompt_hook
-
-        def prompt_until_exit(current_prompt):
-            gdb.prompt_hook = old_prompt_hook  # retrieve old prompt hook
-            print_info("GEP is running now!")
-            UserParamater.gep_loaded = True
-            history_on = gdb.parameter("history save")
-            if history_on:
-                global HISTORY_FILENAME
-                HISTORY_FILENAME = gdb.parameter("history filename")
-                is_ignore_duplicates = -1 == gdb.parameter("history remove-duplicates")
-                gdb_history = GDBHistory(
-                    HISTORY_FILENAME, ignore_duplicates=is_ignore_duplicates
-                )
-            else:
-                print_warning("`set history save on` for better experience with GEP")
-                gdb_history = InMemoryHistory()
-            session = PromptSession(
-                history=gdb_history,
-                enable_history_search=True,
-                auto_suggest=AutoSuggestFromHistory(),
-                completer=GDBCompleter() if not HAS_FZF else None,
-                complete_style=CompleteStyle.COLUMN
-                if single_column_tab_complete.value
-                else CompleteStyle.MULTI_COLUMN,
-                complete_while_typing=False,
-                key_bindings=BINDINGS,
-                output=create_output(stdout=sys.__stdout__),
-            )
-            while True:
-                try:
-                    # emulate the original prompt
-                    prompt_string = (
-                        gdb.prompt_hook(current_prompt) if gdb.prompt_hook else None
-                    )
-                    if prompt_string is None:  # prompt string is set by gdb command
-                        prompt_string = gdb.parameter("prompt")
-                    prompt_string = prompt_string.replace("\001", "").replace(
-                        "\002", ""
-                    )  # fix for ANSI prompt
-                    gdb_cmd = session.prompt(ANSI(prompt_string))
-                    if not gdb_cmd.strip():
-                        gdb_cmd_list = gdb_history.get_strings()
-                        if gdb_cmd_list:
-                            previous_gdb_cmd = gdb_cmd_list[-1]
-                            if (
-                                previous_gdb_cmd.split()
-                                and previous_gdb_cmd.split()[0] not in DONT_REPEAT
-                            ):
-                                gdb_cmd = previous_gdb_cmd
-                    gdb.execute(gdb_cmd, from_tty=True)
-                except gdb.error as e:
-                    print(e)
-                except KeyboardInterrupt:
-                    if ctrl_c_quit.value:
-                        gdb.execute("quit")
-                except EOFError:
-                    gdb.execute("quit")
-                except Exception as e:
-                    print(e)
-                    traceback.print_tb(e.__traceback__)
-
-        gdb.prompt_hook = prompt_until_exit
-
-
-GDBConsoleWrapper()
-
-
 class UpdateGEPCommand(gdb.Command):
     """
     Update GEP to the latest version
     """
 
     def __init__(self):
+        # we need save __file__ because somehow when gdb invoke this command, somehow __file__ will be not defined
+        self.__gep_location = __file__
         super(UpdateGEPCommand, self).__init__("gep-update", gdb.COMMAND_NONE)
 
     def invoke(self, arg, from_tty):
         print_info("Updating GEP...")
-        gep_filename = os.path.expanduser("~/GEP/.gdbinit-gep.py")
-        if not os.path.exists(gep_filename):
-            print_warning("GEP is not installed at %s, update aborted" % gep_filename)
-            return
-        with open(gep_filename, "r") as f:
-            try:
-                import urllib.request
+        try:
+            import urllib.request
 
-                content = f.read()
-                remote_content = urllib.request.urlopen(
-                    "https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py"
-                ).read()
-            except Exception as e:
-                print(e)
-                print_warning("Failed to download GEP from Github")
-                return
-            if content == remote_content.decode("utf-8"):
-                print_info("GEP is already the latest version.")
-                return
-        with open(gep_filename, "w") as f:
+            remote_content = urllib.request.urlopen(
+                "https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py"
+            ).read()
+        except Exception as e:
+            print(e)
+            print_warning("Failed to download GEP from Github")
+            return
+        with open(self.__gep_location, "r") as f:
+            content = f.read()
+        if content == remote_content.decode("utf-8"):
+            print_info("GEP is already the latest version.")
+            return
+        with open(self.__gep_location, "w") as f:
             f.write(remote_content.decode("utf-8"))
         print_info("GEP is updated to the latest version.")
+        print_info("Please restart GDB to use the latest version of GEP.")
+        print_warning(
+            "Note: If you haven't updated GEP for a long time, "
+            "you may need to check https://github.com/lebr0nli/GEP to avoid some unexpected errors."
+        )
 
 
 UpdateGEPCommand()
+
+
+def gep_prompt(current_prompt: str) -> None:
+    print_info("GEP is running now!")
+    UserParamater.gep_loaded = True
+    history_on = gdb.parameter("history save")
+    if history_on:
+        global HISTORY_FILENAME
+        HISTORY_FILENAME = gdb.parameter("history filename")
+        is_ignore_duplicates = -1 == gdb.parameter("history remove-duplicates")
+        gdb_history = GDBHistory(
+            HISTORY_FILENAME, ignore_duplicates=is_ignore_duplicates
+        )
+    else:
+        print_warning("`set history save on` for better experience with GEP")
+        gdb_history = InMemoryHistory()
+    session = PromptSession(
+        history=gdb_history,
+        enable_history_search=True,
+        auto_suggest=AutoSuggestFromHistory(),
+        completer=GDBCompleter() if not HAS_FZF else None,
+        complete_style=CompleteStyle.COLUMN
+        if single_column_tab_complete.value
+        else CompleteStyle.MULTI_COLUMN,
+        complete_while_typing=False,
+        key_bindings=BINDINGS,
+        output=create_output(stdout=sys.__stdout__),
+    )
+    while True:
+        try:
+            # emulate the original prompt
+            prompt_string = gdb.prompt_hook(current_prompt) if gdb.prompt_hook else None
+            if prompt_string is None:  # prompt string is set by gdb command
+                prompt_string = gdb.parameter("prompt")
+            prompt_string = prompt_string.replace("\001", "").replace(
+                "\002", ""
+            )  # fix for ANSI prompt
+            gdb_cmd = session.prompt(ANSI(prompt_string))
+            if not gdb_cmd.strip():
+                gdb_cmd_list = gdb_history.get_strings()
+                if gdb_cmd_list:
+                    previous_gdb_cmd = gdb_cmd_list[-1]
+                    if (
+                        previous_gdb_cmd.split()
+                        and previous_gdb_cmd.split()[0] not in DONT_REPEAT
+                    ):
+                        gdb_cmd = previous_gdb_cmd
+            gdb.execute(gdb_cmd, from_tty=True)
+        except gdb.error as e:
+            print(e)
+        except KeyboardInterrupt:
+            if ctrl_c_quit.value:
+                gdb.execute("quit")
+        except EOFError:
+            gdb.execute("quit")
+        except Exception as e:
+            print(e)
+            traceback.print_tb(e.__traceback__)
+
+
+def hijack_prompt() -> None:
+    """
+    Hijack the original prompt and use GEP prompt
+    """
+    original_prompt = gdb.prompt_hook
+
+    def hijacked_prompt(current_prompt: str) -> None:
+        gdb.prompt_hook = original_prompt  # retrieve old prompt hook
+        gep_prompt(current_prompt)  # pass the current_prompt to gep_prompt
+
+    gdb.prompt_hook = hijacked_prompt
+
+
+def main() -> None:
+    # source the .gdbinit-gep config in the same directory
+    gep_path = os.path.dirname(os.path.realpath(__file__))
+    gdb.execute("source %s" % os.path.join(gep_path, "gdbinit-gep"))
+
+    # Hijack the prompt of GDB to use our own prompt
+    hijack_prompt()
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        traceback.print_tb(e.__traceback__)
+        print_warning(
+            "Something went wrong when running GEP, please report an issue on https://github.com/lebr0nli/GEP/issues with the traceback above, thanks!"
+        )
