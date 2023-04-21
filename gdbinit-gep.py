@@ -521,7 +521,7 @@ def hijack_prompt() -> None:
 
 
 def main() -> None:
-    # source the .gdbinit-gep config in the same directory
+    # source the gdbinit-gep config in the same directory
     gep_path = os.path.dirname(os.path.realpath(__file__))
     gdb.execute("source %s" % os.path.join(gep_path, "gdbinit-gep"))
 
