@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 
 # install prompt_toolkit
 if [ "$(which python3)" ]; then
@@ -13,21 +14,13 @@ else
 fi
 
 # create a folder for GEP
-mkdir -p ~/GEP/
+INSTALL_PATH=${XDG_DATA_HOME:-$HOME/.local/share}/GEP
+mkdir -p $INSTALL_PATH
+GDBINIT_GEP_PY=$INSTALL_PATH/gdbinit-gep.py
+echo "Installing GEP to $INSTALL_PATH ..."
 
-# check curl or wget
-if [ "$(which curl)" ]; then
-    curl --silent --location https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep --output ~/GEP/.gdbinit-gep
-    curl --silent --location https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py --output ~/GEP/.gdbinit-gep.py
-    curl --silent --location https://raw.githubusercontent.com/lebr0nli/GEP/main/geprc.py --output ~/GEP/geprc.py
-elif [ "$(which wget)" ]; then
-    wget -O ~/GEP/.gdbinit-gep -q https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep
-    wget -O ~/GEP/.gdbinit-gep.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py
-    wget -O ~/GEP/geprc.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/geprc.py
-else
-    echo "Can't find curl or wget in your env, please install it and run again"
-    exit 1
-fi
+# git clone the repo
+git clone https://github.com/lebr0nli/GEP.git --depth=1 $INSTALL_PATH
 
 
 if [ -f ~/.gdbinit ]; then
@@ -40,7 +33,7 @@ fi
 
 # append gep to gdbinit
 if ! grep -q gep ~/.gdbinit; then
-    echo -e '\nsource ~/GEP/.gdbinit-gep\n' >> ~/.gdbinit
+    printf "\nsource $GDBINIT_GEP_PY\n" >> ~/.gdbinit
 fi
 
 exit 0

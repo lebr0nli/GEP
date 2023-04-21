@@ -41,24 +41,21 @@ $ bash -c "$(wget https://raw.githubusercontent.com/lebr0nli/GEP/main/install.sh
 
 # manually
 $ pip install --no-cache-dir prompt_toolkit
-$ mkdir -p ~/GEP
-$ wget -O ~/GEP/.gdbinit-gep -q https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep
-$ wget -O ~/GEP/.gdbinit-gep.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py
-$ wget -O ~/GEP/geprc.py -q https://raw.githubusercontent.com/lebr0nli/GEP/main/geprc.py
-$ echo -e '\nsource ~/GEP/.gdbinit-gep\n' >> ~/.gdbinit
+$ git clone https://github.com/lebr0nli/GEP.git ~/.local/share/GEP
+$ printf '\nsource ~/.local/share/GEP/gdbinit-gep.py\n' >> ~/.gdbinit
 ```
 
 3. Enjoy!
 
 ## How to update the version of GEP?
 
-In your GDB, use `gep-update` command, or you can manually use `wget` or `curl` to download the `.gdbinit-gep.py` again.
+In your GDB, use `gep-update` command, or you can manually use `wget` or `curl` to download the [gdbinit-gep.py](./gdbinit-gep.py) again.
 
 ## For more configuration
 
-You can modify the configuration for history, auto-completion, and other GEP configurations in `$HOME/GEP/.gdbinit-gep`.
+You can modify the configuration for history, auto-completion, and other GEP configurations in `/path/to/GEP/gdbinit-gep`.
 
-You can also add your custom key bindings by modifying `$HOME/GEP/geprc.py`.
+You can also add your custom key bindings by modifying `/path/to/GEP/geprc.py`.
 
 ## The trade-offs
 
