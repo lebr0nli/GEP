@@ -435,11 +435,10 @@ class UpdateGEPCommand(gdb.Command):
             return
         with open(self.__gep_location, "w") as f:
             f.write(remote_content.decode("utf-8"))
-        print_info("GEP is updated to the latest version.")
+        print_info("GEP at %s is updated to the latest version." % self.__gep_location)
         print_info("Please restart GDB to use the latest version of GEP.")
         print_warning(
-            "Note: If you haven't updated GEP for a long time, "
-            "you may need to check https://github.com/lebr0nli/GEP to avoid some unexpected errors."
+            "You may need to check https://github.com/lebr0nli/GEP for more information about the new version."
         )
 
 
