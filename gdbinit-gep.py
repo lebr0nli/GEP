@@ -65,6 +65,10 @@ FZF_PRVIEW_WINDOW_ARGS = (
 )
 
 try:
+    directory, file = os.path.split(__file__)
+    directory = os.path.expanduser(directory)
+    directory = os.path.abspath(directory)
+    sys.path.append(directory)
     from geprc import BINDINGS
     from geprc import DONT_REPEAT as USER_DONT_REPEAT
 
