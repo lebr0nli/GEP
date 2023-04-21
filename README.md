@@ -51,6 +51,11 @@ $ printf '\nsource ~/.local/share/GEP/gdbinit-gep.py\n' >> ~/.gdbinit
 
 In your GDB, use `gep-update` command, or you can manually use `wget` or `curl` to download the [gdbinit-gep.py](./gdbinit-gep.py) again.
 
+```shell
+# e.g. using wget and your GEP is installed in ~/.local/share/GEP
+wget https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py -O ~/.local/share/GEP/gdbinit-gep.py
+```
+
 ## For more configuration
 
 You can modify the configuration for history, auto-completion, and other GEP configurations in `/path/to/GEP/gdbinit-gep`.
