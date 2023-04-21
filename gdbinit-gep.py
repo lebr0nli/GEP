@@ -53,7 +53,6 @@ FZF_RUN_CMD = (
     "fzf",
     "--select-1",
     "--exit-0",
-    "--no-multi",
     "--tiebreak=index",
     "--no-multi",
     "--height=40%",
