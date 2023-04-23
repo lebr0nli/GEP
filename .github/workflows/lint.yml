@@ -1,0 +1,19 @@
+name: Lint
+on: [push, pull_request]
+
+jobs:
+  lint:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --user black isort flake8 vermin
+        sudo apt-get update && sudo apt-get install -y shellcheck shfmt
+
+    - name: Run linters
+      run: |
+        ./lint.sh

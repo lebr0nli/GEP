@@ -25,7 +25,7 @@ And also, GEP has some awesome features already, you can directly use it!
 
 ## How to install it?
 
-Make sure you have GDB 8.0 or higher compiled with Python3.6+ bindings, then:
+Make sure you have GDB 8.0 or higher compiled with Python3.7+ bindings, then:
 
 1. Install fzf: [Installation](https://github.com/junegunn/fzf#installation)
 
@@ -99,9 +99,9 @@ If you have some user-defined function that has `dont-repeat` property, add your
 >
 > If you found some builtin commands which should or shouldn't be added by default, let me know on the issue page, thanks!
 
-## Special thank
+## Credits
 
-Some ideas for the installation guide are inspired by [hugsy/gef](https://github.com/hugsy/gef).
+Some ideas/code are inspired by [hugsy/gef](https://github.com/hugsy/gef) and [pwndbg/pwndbg](https://github.com/pwndbg/pwndbg).
 
 Thanks!
 
