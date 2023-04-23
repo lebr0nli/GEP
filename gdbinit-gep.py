@@ -9,17 +9,25 @@ import traceback
 from itertools import chain
 from shutil import which
 from string import ascii_letters
-from subprocess import PIPE, Popen
-from typing import Dict, Iterable, Optional, Tuple
+from subprocess import PIPE
+from subprocess import Popen
+from typing import Dict
+from typing import Iterable
+from typing import Optional
+from typing import Tuple
 
 import gdb
-from prompt_toolkit import PromptSession, print_formatted_text
+from prompt_toolkit import PromptSession
+from prompt_toolkit import print_formatted_text
 from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.completion import Completer
+from prompt_toolkit.completion import Completion
 from prompt_toolkit.document import Document
-from prompt_toolkit.formatted_text import ANSI, FormattedText
-from prompt_toolkit.history import FileHistory, InMemoryHistory
+from prompt_toolkit.formatted_text import ANSI
+from prompt_toolkit.formatted_text import FormattedText
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.key_binding import KeyPressEvent
 from prompt_toolkit.output import create_output
 from prompt_toolkit.shortcuts import CompleteStyle
@@ -100,15 +108,15 @@ def get_gdb_completes(query: str) -> Iterable[str]:
         for c in ascii_letters + "_-":
             if completions_limit <= 0:
                 break
-            completions = gdb.execute(
-                "complete %s" % query + c, to_string=True
-            ).splitlines()[:completions_limit]
+            completions = gdb.execute("complete %s" % query + c, to_string=True).splitlines()[
+                :completions_limit
+            ]
             all_completions = chain(all_completions, completions)
             completions_limit -= len(completions)
     else:
-        all_completions = gdb.execute(
-            "complete %s" % query, to_string=True
-        ).splitlines()[:completions_limit]
+        all_completions = gdb.execute("complete %s" % query, to_string=True).splitlines()[
+            :completions_limit
+        ]
         all_completions = iter(all_completions)
 
     return all_completions
@@ -192,7 +200,7 @@ def fzf_reverse_search(event: KeyPressEvent):
             visited = set()
             # Reverse the history, and only keep the youngest and unique one
             for line in f.read().strip().split("\n")[::-1]:
-                if line and not line in visited:
+                if line and line not in visited:
                     visited.add(line)
                     p.stdin.write(line + "\n")
         stdout, _ = p.communicate()
@@ -218,18 +226,14 @@ def fzf_tab_autocomplete(event: KeyPressEvent):
         if is_empty:
             return
         query = re.split(r"\W+", text_before_cursor)[-1]
-        p = create_fzf_process(
-            query, FZF_PRVIEW_CMD if should_get_all_help_docs else None
-        )
+        p = create_fzf_process(query, FZF_PRVIEW_CMD if should_get_all_help_docs else None)
         completion_help_docs = {}
         cursor_idx_in_completion = len(text_before_cursor.lstrip())
         for i, completion in enumerate(all_completions):
             p.stdin.write(query + completion[cursor_idx_in_completion:] + "\n")
             if should_get_all_help_docs:
                 completion_help_docs[i] = safe_get_help_docs(completion)
-        t = FzfTabCompletePreviewThread(
-            FIFO_INPUT_PATH, FIFO_OUTPUT_PATH, completion_help_docs
-        )
+        t = FzfTabCompletePreviewThread(FIFO_INPUT_PATH, FIFO_OUTPUT_PATH, completion_help_docs)
         t.start()
         stdout, _ = p.communicate()
         t.stop()
@@ -250,11 +254,7 @@ class FzfTabCompletePreviewThread(threading.Thread):
     """
 
     def __init__(
-        self,
-        fifo_input_path: str,
-        fifo_output_path: str,
-        completion_help_docs: Dict,
-        **kwargs
+        self, fifo_input_path: str, fifo_output_path: str, completion_help_docs: Dict, **kwargs
     ):
         super().__init__(**kwargs)
         self.fifo_input_path = fifo_input_path
@@ -269,9 +269,7 @@ class FzfTabCompletePreviewThread(threading.Thread):
                     data = fifo_input.read()
                     if len(data) == 0:
                         break
-                    with open(
-                        self.fifo_output_path, "w", encoding="utf-8"
-                    ) as fifo_output:
+                    with open(self.fifo_output_path, "w", encoding="utf-8") as fifo_output:
                         try:
                             idx = int(data)
                         except ValueError:
@@ -399,9 +397,7 @@ class GDBCompleter(Completer):
 
         for completion in all_completions:
             display_meta = (
-                None
-                if not should_get_all_help_docs
-                else safe_get_help_docs(completion) or None
+                None if not should_get_all_help_docs else safe_get_help_docs(completion) or None
             )
             # remove some prefix of raw completion
             completion = completion[cursor_idx_in_completion:]
@@ -457,9 +453,7 @@ def gep_prompt(current_prompt: str) -> None:
         global HISTORY_FILENAME
         HISTORY_FILENAME = gdb.parameter("history filename")
         is_ignore_duplicates = -1 == gdb.parameter("history remove-duplicates")
-        gdb_history = GDBHistory(
-            HISTORY_FILENAME, ignore_duplicates=is_ignore_duplicates
-        )
+        gdb_history = GDBHistory(HISTORY_FILENAME, ignore_duplicates=is_ignore_duplicates)
     else:
         print_warning("`set history save on` for better experience with GEP")
         gdb_history = InMemoryHistory()
@@ -489,10 +483,7 @@ def gep_prompt(current_prompt: str) -> None:
                 gdb_cmd_list = gdb_history.get_strings()
                 if gdb_cmd_list:
                     previous_gdb_cmd = gdb_cmd_list[-1]
-                    if (
-                        previous_gdb_cmd.split()
-                        and previous_gdb_cmd.split()[0] not in DONT_REPEAT
-                    ):
+                    if previous_gdb_cmd.split() and previous_gdb_cmd.split()[0] not in DONT_REPEAT:
                         gdb_cmd = previous_gdb_cmd
             gdb.execute(gdb_cmd, from_tty=True)
         except gdb.error as e:

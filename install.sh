@@ -15,13 +15,12 @@ fi
 
 # create a folder for GEP
 INSTALL_PATH=${XDG_DATA_HOME:-$HOME/.local/share}/GEP
-mkdir -p $INSTALL_PATH
+mkdir -p "$INSTALL_PATH"
 GDBINIT_GEP_PY=$INSTALL_PATH/gdbinit-gep.py
 echo "Installing GEP to $INSTALL_PATH ..."
 
 # git clone the repo
-git clone https://github.com/lebr0nli/GEP.git --depth=1 $INSTALL_PATH
-
+git clone https://github.com/lebr0nli/GEP.git --depth=1 "$INSTALL_PATH"
 
 if [ -f ~/.gdbinit ]; then
     # backup gdbinit if exists
@@ -33,7 +32,7 @@ fi
 
 # append gep to gdbinit
 if ! grep -q gep ~/.gdbinit; then
-    printf "\nsource $GDBINIT_GEP_PY\n" >> ~/.gdbinit
+    printf '\nsource%s\n' "$GDBINIT_GEP_PY" >> ~/.gdbinit
 fi
 
 exit 0
