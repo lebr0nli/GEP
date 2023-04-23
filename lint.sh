@@ -54,4 +54,6 @@ fi
 
 shellcheck "${LINT_SHELL_FILES[@]}"
 
+vermin -vvv --no-tips -q -t=3.7 --violations "${LINT_PYTHON_FILES[@]}"
+
 flake8 --show-source "${LINT_PYTHON_FILES[@]}"
