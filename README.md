@@ -99,9 +99,9 @@ If you have some user-defined function that has `dont-repeat` property, add your
 >
 > If you found some builtin commands which should or shouldn't be added by default, let me know on the issue page, thanks!
 
-## Special thank
+## Credits
 
-Some ideas for the installation guide are inspired by [hugsy/gef](https://github.com/hugsy/gef).
+Some ideas/code are inspired by [hugsy/gef](https://github.com/hugsy/gef) and [pwndbg/pwndbg](https://github.com/pwndbg/pwndbg).
 
 Thanks!
 
