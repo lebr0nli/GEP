@@ -69,6 +69,14 @@ effects.
 
 However, the side effects are avoidable, here are the guides to avoid them:
 
+### `TUI mode`
+
+Somehow, GEP breaks the TUI mode in GDB, so it's advisable not to use GDB's built-in TUI when working with GEP (refer to issue #13).
+
+Alternatively, I personally recommend trying [pwndbg/pwndbg](https://github.com/pwndbg/pwndbg) or [hugsy/gef](https://github.com/hugsy/gef) for their user-friendly features.
+
+> If you have any ideas to resolve this issue, PRs are greatly appreciated. 🙏
+
 ### `gdb.event.before_prompt`
 
 The GDB Python API event: `gdb.event.before_prompt` may be called only once.
