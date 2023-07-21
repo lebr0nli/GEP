@@ -27,9 +27,9 @@ And also, GEP has some awesome features already, you can directly use it!
 
 Make sure you have GDB 8.0 or higher compiled with Python3.7+ bindings, then:
 
-1. Install fzf: [Installation](https://github.com/junegunn/fzf#installation)
-
-2. Install this plug-in by:
+1. Install git and curl (or wget)
+2. Install fzf: [Installation](https://github.com/junegunn/fzf#installation) (Optional, but GEP works better with fzf)
+3. Install this plug-in by:
 
 ```shell
 # via the install script
