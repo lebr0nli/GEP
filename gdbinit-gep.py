@@ -6,13 +6,12 @@ import sys
 import tempfile
 import threading
 import traceback
-from itertools import chain
 from shutil import which
 from string import ascii_letters
 from subprocess import PIPE
 from subprocess import Popen
 from typing import Dict
-from typing import Iterable
+from typing import List
 from typing import Optional
 from typing import Tuple
 
@@ -96,7 +95,7 @@ def print_warning(s):
     print_formatted_text(FormattedText([("#FFCC00", s)]), file=sys.__stdout__)
 
 
-def get_gdb_completes(query: str) -> Iterable[str]:
+def get_gdb_completes(query: str) -> List[str]:
     completions_limit = gdb.parameter("max-completions")
     if completions_limit == -1:
         completions_limit = 0xFFFFFFFF
@@ -111,13 +110,12 @@ def get_gdb_completes(query: str) -> Iterable[str]:
             completions = gdb.execute("complete %s" % query + c, to_string=True).splitlines()[
                 :completions_limit
             ]
-            all_completions = chain(all_completions, completions)
+            all_completions.extend(completions)
             completions_limit -= len(completions)
     else:
         all_completions = gdb.execute("complete %s" % query, to_string=True).splitlines()[
             :completions_limit
         ]
-        all_completions = iter(all_completions)
 
     return all_completions
 
@@ -142,16 +140,16 @@ def should_get_help_docs(completion: str) -> bool:
     return safe_get_help_docs(parent_command) != safe_get_help_docs(completion)
 
 
-def get_gdb_completion_and_status(query: str) -> Tuple[Iterable[str], bool]:
+def get_gdb_completion_and_status(query: str) -> Tuple[List[str], bool]:
+    """
+    Return all possible completions and whether we need to get help docs for all completions.
+    """
     all_completions = get_gdb_completes(query)
     # peek the first completion
-    first_completion = next(all_completions, None)
     should_get_all_help_docs = False
-    if first_completion:
-        # restore the iterator
-        all_completions = chain([first_completion], all_completions)
-        should_get_all_help_docs = should_get_help_docs(first_completion)
-    return all_completions, should_get_all_help_docs, first_completion is None
+    if all_completions:
+        should_get_all_help_docs = should_get_help_docs(all_completions[0])
+    return all_completions, should_get_all_help_docs
 
 
 def create_fzf_process(query, preview: str = "") -> Popen:
@@ -217,20 +215,37 @@ def fzf_tab_autocomplete(event: KeyPressEvent):
     """
 
     def _fzf_tab_autocomplete():
-        text_before_cursor = event.app.current_buffer.document.text_before_cursor
-        (
-            all_completions,
-            should_get_all_help_docs,
-            is_empty,
-        ) = get_gdb_completion_and_status(text_before_cursor)
-        if is_empty:
+        target_text = (
+            event.app.current_buffer.document.text_before_cursor.lstrip()
+        )  # Ignore leading whitespaces
+        all_completions, should_get_all_help_docs = get_gdb_completion_and_status(target_text)
+        if not all_completions:
             return
-        query = re.split(r"\W+", text_before_cursor)[-1]
+        prefix = os.path.commonprefix(all_completions)
+        prefix = os.path.commonprefix([prefix, target_text])
+        # TODO/FIXME: qeury might not be the expected one, e.g.
+        # (gdb) complete b fun
+        # b foo::B::func()
+        # b funlockfile
+        # The query should be "fun", but using the longest common prefix and split by non-word characters
+        # We get "f" as the query
+        # TODO/FIXME: For debugging C++/Rust code, we need more complex regex to get the more accurate query
+        query = re.split(r"\W+", prefix)[-1]
+        if prefix:
+            completion_idx = len(prefix) - len(query)
+        else:
+            completion_idx = 0
         p = create_fzf_process(query, FZF_PRVIEW_CMD if should_get_all_help_docs else None)
         completion_help_docs = {}
-        cursor_idx_in_completion = len(text_before_cursor.lstrip())
         for i, completion in enumerate(all_completions):
-            p.stdin.write(query + completion[cursor_idx_in_completion:] + "\n")
+            if prefix.endswith("'" + query) and not completion.endswith("'"):
+                # This is a heuristic to fix the weird behavior of gdb's `complete` command:
+                # (gdb) complete p 'm
+                # ...
+                # p 'main
+                p.stdin.write(completion[completion_idx:] + "'" + "\n")
+            else:
+                p.stdin.write(completion[completion_idx:] + "\n")
             if should_get_all_help_docs:
                 completion_help_docs[i] = safe_get_help_docs(completion)
         t = FzfTabCompletePreviewThread(FIFO_INPUT_PATH, FIFO_OUTPUT_PATH, completion_help_docs)
@@ -238,9 +253,20 @@ def fzf_tab_autocomplete(event: KeyPressEvent):
         stdout, _ = p.communicate()
         t.stop()
         if stdout:
-            # append the rest of the completion after the query
-            query_len = len(query)
-            event.app.current_buffer.insert_text(stdout[query_len:].strip())
+            # We might need to delete some characters before cursor if prefix + query != target_text
+            event.app.current_buffer.delete_before_cursor(len(target_text) - len(prefix))
+            stdout = stdout.rstrip()
+            if (
+                target_text.startswith(prefix + "'")
+                and not stdout.startswith("'")
+                and stdout.endswith("'")
+            ):
+                # This is a heuristic to fix the weird behavior of gdb's `complete` command:
+                # (gdb) complete b 'm
+                # ...
+                # b main'
+                stdout = "'" + stdout
+            event.app.current_buffer.insert_text(stdout[len(query) :].rstrip())
 
     run_in_terminal(_fzf_tab_autocomplete)
 
@@ -385,24 +411,28 @@ class GDBCompleter(Completer):
         super().__init__()
 
     def get_completions(self, document, complete_event):
-        text_before_cursor = document.text_before_cursor
-        cursor_idx_in_completion = len(text_before_cursor.lstrip())
-        (
-            all_completions,
-            should_get_all_help_docs,
-            is_empty,
-        ) = get_gdb_completion_and_status(text_before_cursor)
-        if is_empty:
+        target_text = document.text_before_cursor.lstrip()  # Ignore leading whitespaces
+
+        cursor_idx_in_completion = len(target_text)
+        all_completions, should_get_all_help_docs = get_gdb_completion_and_status(target_text)
+        if not all_completions:
             return
 
         for completion in all_completions:
+            if not completion.startswith(target_text):
+                # TODO/FIXME: This might cause some missing of completion for something like:
+                # (gdb) complete b fun
+                # b foo::B::func()
+                # b funlockfile
+                # b foo::B::func() will be ignored
+                continue
             display_meta = (
                 None if not should_get_all_help_docs else safe_get_help_docs(completion) or None
             )
             # remove some prefix of raw completion
             completion = completion[cursor_idx_in_completion:]
             # display readable completion based on the text before cursor
-            display = re.split(r"\W+", text_before_cursor)[-1] + completion
+            display = re.split(r"\W+", target_text)[-1] + completion
             yield Completion(completion, display=display, display_meta=display_meta)
 
 
