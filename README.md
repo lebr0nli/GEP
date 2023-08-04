@@ -1,6 +1,6 @@
 # GEP (GDB Enhanced Prompt)
 
-[![asciicast](https://asciinema.org/a/TJiEkHv3cqieR0XizG41uOg93.svg)](https://asciinema.org/a/TJiEkHv3cqieR0XizG41uOg93)
+https://github.com/lebr0nli/GEP/assets/61896187/0832d4e9-001c-44e7-b3aa-a22bf879b895
 
 `GEP` (GDB Enhanced Prompt) is a GDB plug-in which make your GDB command prompt more convenient and flexibility.
 
