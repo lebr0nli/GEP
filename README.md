@@ -28,8 +28,9 @@ And also, GEP has some awesome features already, you can directly use it!
 Make sure you have GDB 8.0 or higher compiled with Python3.7+ bindings, then:
 
 1. Install git and curl (or wget)
-2. Install fzf: [Installation](https://github.com/junegunn/fzf#installation) (Optional, but GEP works better with fzf)
-3. Install this plug-in by:
+2. Make sure you have [virtualenv](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#installing-virtualenv) installed
+3. Install fzf: [Installation](https://github.com/junegunn/fzf#installation) (Optional, but GEP works better with fzf)
+4. Install this plug-in by:
 
 ```shell
 # via the install script
@@ -38,23 +39,13 @@ $ bash -c "$(curl -fsSL https://raw.githubusercontent.com/lebr0nli/GEP/main/inst
 
 ## using wget
 $ bash -c "$(wget https://raw.githubusercontent.com/lebr0nli/GEP/main/install.sh -O -)"
-
-# manually
-$ pip install --no-cache-dir prompt_toolkit
-$ git clone https://github.com/lebr0nli/GEP.git ~/.local/share/GEP
-$ printf '\nsource ~/.local/share/GEP/gdbinit-gep.py\n' >> ~/.gdbinit
 ```
 
 3. Enjoy!
 
 ## How to update the version of GEP?
 
-In your GDB, use `gep-update` command, or you can manually use `wget` or `curl` to download the [gdbinit-gep.py](./gdbinit-gep.py) again.
-
-```shell
-# e.g. using wget and your GEP is installed in ~/.local/share/GEP
-wget https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py -O ~/.local/share/GEP/gdbinit-gep.py
-```
+You can re-run the install script to update the version of GEP.
 
 ## For more configuration
 

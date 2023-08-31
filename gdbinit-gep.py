@@ -2,10 +2,12 @@ import atexit
 import os
 import re
 import shutil
+import site
 import sys
 import tempfile
 import threading
 import traceback
+from glob import glob
 from shutil import which
 from string import ascii_letters
 from subprocess import PIPE
@@ -16,6 +18,18 @@ from typing import Optional
 from typing import Tuple
 
 import gdb
+
+directory, file = os.path.split(__file__)
+directory = os.path.expanduser(directory)
+directory = os.path.abspath(directory)
+sys.path.append(directory)
+venv_path = os.path.join(directory, ".venv")
+if not os.path.exists(venv_path):
+    print("You might need to reinstall GEP, please check the latest version on Github")
+    sys.exit(1)
+site_pkgs_path = glob(os.path.join(venv_path, "lib/*/site-packages"))[0]
+site.addsitedir(site_pkgs_path)
+
 from prompt_toolkit import PromptSession
 from prompt_toolkit import print_formatted_text
 from prompt_toolkit.application import run_in_terminal
@@ -72,10 +86,6 @@ FZF_PRVIEW_WINDOW_ARGS = (
 )
 
 try:
-    directory, file = os.path.split(__file__)
-    directory = os.path.expanduser(directory)
-    directory = os.path.abspath(directory)
-    sys.path.append(directory)
     from geprc import BINDINGS
     from geprc import DONT_REPEAT as USER_DONT_REPEAT
 
@@ -434,45 +444,6 @@ class GDBCompleter(Completer):
             # display readable completion based on the text before cursor
             display = re.split(r"\W+", target_text)[-1] + completion
             yield Completion(completion, display=display, display_meta=display_meta)
-
-
-class UpdateGEPCommand(gdb.Command):
-    """
-    Update GEP to the latest version
-    """
-
-    def __init__(self):
-        # we need save __file__ because somehow when gdb invoke this command, somehow __file__ will be not defined
-        self.__gep_location = __file__
-        super(UpdateGEPCommand, self).__init__("gep-update", gdb.COMMAND_NONE)
-
-    def invoke(self, arg, from_tty):
-        print_info("Updating GEP...")
-        try:
-            import urllib.request
-
-            remote_content = urllib.request.urlopen(
-                "https://raw.githubusercontent.com/lebr0nli/GEP/main/gdbinit-gep.py"
-            ).read()
-        except Exception as e:
-            print(e)
-            print_warning("Failed to download GEP from Github")
-            return
-        with open(self.__gep_location, "r") as f:
-            content = f.read()
-        if content == remote_content.decode("utf-8"):
-            print_info("GEP is already the latest version.")
-            return
-        with open(self.__gep_location, "w") as f:
-            f.write(remote_content.decode("utf-8"))
-        print_info("GEP at %s is updated to the latest version." % self.__gep_location)
-        print_info("Please restart GDB to use the latest version of GEP.")
-        print_warning(
-            "You may need to check https://github.com/lebr0nli/GEP for more information about the new version."
-        )
-
-
-UpdateGEPCommand()
 
 
 def gep_prompt(current_prompt: str) -> None:
