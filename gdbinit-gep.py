@@ -48,6 +48,7 @@ from prompt_toolkit.shortcuts import CompleteStyle
 # global variables
 HAS_FZF = which("fzf") is not None
 HISTORY_FILENAME = ".gdb_history"
+MULTI_LINE_COMMANDS = {"commands", "if", "while", "py", "python", "define", "document"}
 # This sucks, but there's not a GDB API for checking dont-repeat now.
 # I just collect some common used commands which should not be repeated.
 # If you have some user-define function, add your command into the list manually.
@@ -68,7 +69,7 @@ DONT_REPEAT = {
     "functions",
     "gef",
     "tmux-setup",
-}
+} | MULTI_LINE_COMMANDS
 
 FZF_RUN_CMD = (
     "fzf",
@@ -479,14 +480,40 @@ def gep_prompt(current_prompt: str) -> None:
             prompt_string = prompt_string.replace("\001", "").replace(
                 "\002", ""
             )  # fix for ANSI prompt
-            gdb_cmd = session.prompt(ANSI(prompt_string))
-            if not gdb_cmd.strip():
-                gdb_cmd_list = gdb_history.get_strings()
-                if gdb_cmd_list:
-                    previous_gdb_cmd = gdb_cmd_list[-1]
-                    if previous_gdb_cmd.split() and previous_gdb_cmd.split()[0] not in DONT_REPEAT:
-                        gdb_cmd = previous_gdb_cmd
-            gdb.execute(gdb_cmd, from_tty=True)
+
+            full_cmd = session.prompt(ANSI(prompt_string))
+            main_cmd = re.split(r"\W+", full_cmd.strip())[0]
+            quit_input_in_multiline_mode = False
+
+            if not full_cmd.strip():
+                cmd_list = gdb_history.get_strings()
+                if cmd_list:
+                    previous_cmd = cmd_list[-1]
+                    if main_cmd not in DONT_REPEAT:
+                        full_cmd = previous_cmd
+            elif main_cmd in MULTI_LINE_COMMANDS:
+                if main_cmd in ("py", "python") and full_cmd.strip() not in ("py", "python"):
+                    # e.g. py print(1)
+                    # In this case, we don't need to handle multi-line input
+                    pass
+                else:
+                    # TODO: Improve handling of multi-line input to resemble native GDB behavior,
+                    # such as displaying indents for nested if/while statements.
+                    new_line = ""
+                    while new_line.strip() != "end":
+                        full_cmd += "\n"
+                        try:
+                            new_line = session.prompt(">")
+                        except EOFError:
+                            full_cmd += "end"
+                            break
+                        except KeyboardInterrupt:
+                            quit_input_in_multiline_mode = True
+                            break
+                        full_cmd += new_line
+
+            if not quit_input_in_multiline_mode:
+                gdb.execute(full_cmd, from_tty=True)
         except gdb.error as e:
             print(e)
         except KeyboardInterrupt:
