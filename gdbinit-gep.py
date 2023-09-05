@@ -492,24 +492,41 @@ def gep_prompt(current_prompt: str) -> None:
                     if main_cmd not in DONT_REPEAT:
                         full_cmd = previous_cmd
             elif main_cmd in MULTI_LINE_COMMANDS:
-                if main_cmd in ("py", "python") and full_cmd.strip() not in ("py", "python"):
-                    # e.g. py print(1)
-                    # In this case, we don't need to handle multi-line input
-                    pass
-                else:
-                    # TODO: Improve handling of multi-line input to resemble native GDB behavior,
-                    # such as displaying indents for nested if/while statements.
-                    new_line = ""
-                    while new_line.strip() != "end":
+
+                def single_line_py(main_cmd: str, full_cmd: str) -> bool:
+                    # If full_cmd is something like: `py print(1)`, we don't need to handle multi-line input
+                    return main_cmd in ("py", "python") and full_cmd.strip() not in ("py", "python")
+
+                first_cmd_is_py = main_cmd in ("py", "python")
+
+                if not single_line_py(main_cmd, full_cmd):
+                    # TODO: Should we show more info when using `commands` or `define`?
+                    # e.g. In native GDB:
+                    # (gdb) commands
+                    # Type commands for breakpoint(s) 1, one per line.
+                    # End with a line saying just "end"
+                    # > (input goes here)
+                    stack_size = 1
+                    while stack_size > 0:
                         full_cmd += "\n"
                         try:
-                            new_line = session.prompt(">")
+                            new_line = session.prompt(">".rjust(stack_size))
                         except EOFError:
                             full_cmd += "end"
-                            break
+                            stack_size -= 1
+                            continue
                         except KeyboardInterrupt:
                             quit_input_in_multiline_mode = True
                             break
+                        main_cmd = re.split(r"\W+", new_line.strip())[0]
+                        if (
+                            not first_cmd_is_py
+                            and main_cmd in MULTI_LINE_COMMANDS
+                            and not single_line_py(main_cmd, new_line)
+                        ):
+                            stack_size += 1
+                        elif main_cmd == "end":
+                            stack_size -= 1
                         full_cmd += new_line
 
             if not quit_input_in_multiline_mode:
