@@ -48,6 +48,7 @@ from prompt_toolkit.shortcuts import CompleteStyle
 # global variables
 HAS_FZF = which("fzf") is not None
 HISTORY_FILENAME = ".gdb_history"
+MULTI_LINE_COMMANDS = {"commands", "if", "while", "py", "python", "define", "document"}
 # This sucks, but there's not a GDB API for checking dont-repeat now.
 # I just collect some common used commands which should not be repeated.
 # If you have some user-define function, add your command into the list manually.
@@ -68,7 +69,7 @@ DONT_REPEAT = {
     "functions",
     "gef",
     "tmux-setup",
-}
+} | MULTI_LINE_COMMANDS
 
 FZF_RUN_CMD = (
     "fzf",
@@ -479,14 +480,57 @@ def gep_prompt(current_prompt: str) -> None:
             prompt_string = prompt_string.replace("\001", "").replace(
                 "\002", ""
             )  # fix for ANSI prompt
-            gdb_cmd = session.prompt(ANSI(prompt_string))
-            if not gdb_cmd.strip():
-                gdb_cmd_list = gdb_history.get_strings()
-                if gdb_cmd_list:
-                    previous_gdb_cmd = gdb_cmd_list[-1]
-                    if previous_gdb_cmd.split() and previous_gdb_cmd.split()[0] not in DONT_REPEAT:
-                        gdb_cmd = previous_gdb_cmd
-            gdb.execute(gdb_cmd, from_tty=True)
+
+            full_cmd = session.prompt(ANSI(prompt_string))
+            main_cmd = re.split(r"\W+", full_cmd.strip())[0]
+            quit_input_in_multiline_mode = False
+
+            if not full_cmd.strip():
+                cmd_list = gdb_history.get_strings()
+                if cmd_list:
+                    previous_cmd = cmd_list[-1]
+                    if main_cmd not in DONT_REPEAT:
+                        full_cmd = previous_cmd
+            elif main_cmd in MULTI_LINE_COMMANDS:
+
+                def single_line_py(main_cmd: str, full_cmd: str) -> bool:
+                    # If full_cmd is something like: `py print(1)`, we don't need to handle multi-line input
+                    return main_cmd in ("py", "python") and full_cmd.strip() not in ("py", "python")
+
+                first_cmd_is_py = main_cmd in ("py", "python")
+
+                if not single_line_py(main_cmd, full_cmd):
+                    # TODO: Should we show more info when using `commands` or `define`?
+                    # e.g. In native GDB:
+                    # (gdb) commands
+                    # Type commands for breakpoint(s) 1, one per line.
+                    # End with a line saying just "end"
+                    # > (input goes here)
+                    stack_size = 1
+                    while stack_size > 0:
+                        full_cmd += "\n"
+                        try:
+                            new_line = session.prompt(">".rjust(stack_size))
+                        except EOFError:
+                            full_cmd += "end"
+                            stack_size -= 1
+                            continue
+                        except KeyboardInterrupt:
+                            quit_input_in_multiline_mode = True
+                            break
+                        main_cmd = re.split(r"\W+", new_line.strip())[0]
+                        if (
+                            not first_cmd_is_py
+                            and main_cmd in MULTI_LINE_COMMANDS
+                            and not single_line_py(main_cmd, new_line)
+                        ):
+                            stack_size += 1
+                        elif main_cmd == "end":
+                            stack_size -= 1
+                        full_cmd += new_line
+
+            if not quit_input_in_multiline_mode:
+                gdb.execute(full_cmd, from_tty=True)
         except gdb.error as e:
             print(e)
         except KeyboardInterrupt:
