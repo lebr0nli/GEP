@@ -359,10 +359,6 @@ class UserParamater(gdb.Parameter):
         return "%s is %r." % (self.set_show_doc.capitalize(), svalue)
 
 
-ctrl_c_quit = UserParamater(
-    "ctrl-c-quit", False, "whether to use ctrl-c to exit the gdb", gdb.PARAM_BOOLEAN
-)
-
 single_column_tab_complete = UserParamater(
     "single-column-tab-complete",
     True,
@@ -552,8 +548,7 @@ except gdb.error as e: print(e)
 """
                 )
         except KeyboardInterrupt:
-            if ctrl_c_quit.value:
-                gdb.execute("quit")
+            pass
         except EOFError:
             gdb.execute("quit")
         except Exception as e:
