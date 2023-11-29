@@ -31,16 +31,11 @@ PYTHON=$VENV_PATH/bin/python
 "$PYTHON" -m pip install -U pip
 "$VENV_PATH/bin/pip" install --no-cache-dir -U prompt_toolkit
 
-if [ -f ~/.gdbinit ]; then
-    # backup gdbinit if exists
-    cp ~/.gdbinit ~/.gdbinit.old
-else
-    # create gdbinit if not exists
-    touch ~/.gdbinit
-fi
+# copy example config to INSTALL_PATH if not exists
+cp -n "$INSTALL_PATH"/example/* "$INSTALL_PATH"
 
 # append gep to gdbinit
-if ! grep -q gep ~/.gdbinit; then
+if ! grep -q '^[^#]*source.*/gdbinit-gep.py' ~/.gdbinit; then
     printf '\nsource%s\n' "$GDBINIT_GEP_PY" >> ~/.gdbinit
 fi
 
