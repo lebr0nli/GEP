@@ -44,7 +44,7 @@ $ bash -c "$(wget https://raw.githubusercontent.com/lebr0nli/GEP/main/install.sh
 5. Enjoy!
 
 > [!IMPORTANT]
-> After the installation, the script will automatically add `source /path/to/GEP/gdbinit-gep.py` to your `~/.gdbinit` file. Please make this line is **always** at the end of your `~/.gdbinit` file to avoid some unexpected behaviors.
+> After the installation, the script will automatically add `source /path/to/GEP/gdbinit-gep.py` to your `~/.gdbinit` file. Please make sure this line is **always** at the end of your `~/.gdbinit` file during future modifications of your `~/.gdbinit` to avoid some unexpected behaviors.
 
 ## How to update the version of GEP?
 
