@@ -11,6 +11,6 @@ set history remove-duplicates unlimited
 # Note: Set it to unlimited is not a good idea for large projects
 # set max-completions unlimited
 
-# Set whether to use single column for tab completion
+# Set whether to use single column for tab completion (when fzf is not available)
 # defulat: on
 # set single-column-tab-complete off
