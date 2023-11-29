@@ -41,7 +41,7 @@ $ bash -c "$(curl -fsSL https://raw.githubusercontent.com/lebr0nli/GEP/main/inst
 $ bash -c "$(wget https://raw.githubusercontent.com/lebr0nli/GEP/main/install.sh -O -)"
 ```
 
-> **Note**
+> [!IMPORTANT]
 > After the installation, the script will automatically add `source /path/to/GEP/gdbinit-gep.py` to your `~/.gdbinit` file. Please make this line is **always** at the end of your `~/.gdbinit` file to avoid some unexpected behaviors.
 
 3. Enjoy!
@@ -79,7 +79,7 @@ The GDB Python API event: `gdb.event.before_prompt` may be called only once.
 
 So if you are using a GDB plug-in that is listening on this event, this plug-in will cause some bugs.
 
-> **Note**
+> [!NOTE]
 > As far as I know, pwndbg and gef won't be bothered by this side effect now.
 
 To avoid this, you can change the callback function by adding them to `gdb.prompt_hook`, `gdb.prompt_hook` has almost
@@ -98,7 +98,7 @@ repeatedly executing them.
 
 If you have some user-defined function that has `dont-repeat` property, add your command into the set manually, too.
 
-> **Note**
+> [!NOTE]
 > The set of those user-defined commands are in `geprc.py` and the variable name for it is `DONT_REPEAT`.
 >
 > If you found some builtin commands which should or shouldn't be added by default, let me know on the issue page, thanks!
