@@ -31,7 +31,7 @@ set -o xtrace
 
 LINT_PYTHON_FILES=(
     "gdbinit-gep.py"
-    "geprc.py"
+    "example/geprc.py"
 )
 LINT_SHELL_FILES=(
     "install.sh"
