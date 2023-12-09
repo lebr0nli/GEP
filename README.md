@@ -57,7 +57,7 @@ You can modify the configuration for history, auto-completion, and other GEP con
 You can also add your custom key bindings by modifying `/path/to/GEP/geprc.py`.
 
 > [!NOTE]
-> The `example` subdirectory houses samples and default configurations.
+> The [example](<./example>) subdirectory houses samples and default configurations.
 
 ## The trade-offs
 
