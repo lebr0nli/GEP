@@ -351,12 +351,12 @@ class UserParamater(gdb.Parameter):
         # TODO: Support other type when needed
         if isinstance(svalue, bool):
             svalue = "on" if svalue else "off"
-        return "Set %s to %r." % (self.set_show_doc, svalue)
+        return f"Set {self.set_show_doc} to {svalue!r}."
 
     def get_show_string(self, svalue):
         if not self.gep_loaded:
             return ""
-        return "%s is %r." % (self.set_show_doc.capitalize(), svalue)
+        return f"{self.set_show_doc.capitalize()} is {svalue!r}."
 
 
 single_column_tab_complete = UserParamater(
@@ -371,7 +371,7 @@ if HAS_FZF:
     BINDINGS.add("c-r")(fzf_reverse_search)
     # key binding for fzf tab completion
     FIFO_INPUT_PATH, FIFO_OUTPUT_PATH = create_preview_fifos()
-    FZF_PRVIEW_CMD = "echo {n} > %s\ncat %s" % (FIFO_INPUT_PATH, FIFO_OUTPUT_PATH)
+    FZF_PRVIEW_CMD = f"echo {{n}} > {FIFO_INPUT_PATH}\ncat {FIFO_OUTPUT_PATH}"
     BINDINGS.add("c-i")(fzf_tab_autocomplete)
 else:
     print_warning("Install fzf for better experience with GEP")
