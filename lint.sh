@@ -13,12 +13,12 @@ if [[ $# -gt 1 ]]; then
     help_and_exit
 fi
 
-FORMAT=0
+FIX=0
 
 while [[ $# -gt 0 ]]; do
     case $1 in
         -f | --format)
-            FORMAT=1
+            FIX=1
             shift
             ;;
         *)
@@ -38,15 +38,15 @@ LINT_SHELL_FILES=(
     "lint.sh"
 )
 
-if [[ $FORMAT == 1 ]]; then
-    isort "${LINT_PYTHON_FILES[@]}"
-    black "${LINT_PYTHON_FILES[@]}"
+if [[ $FIX == 1 ]]; then
+    ruff check --fix
+    ruff format
 else
-    isort --check-only --diff "${LINT_PYTHON_FILES[@]}"
-    black --check --diff "${LINT_PYTHON_FILES[@]}"
+    ruff check
+    ruff format --diff
 fi
 
-if [[ $FORMAT == 1 ]]; then
+if [[ $FIX == 1 ]]; then
     shfmt -i 4 -bn -ci -sr -w "${LINT_SHELL_FILES[@]}"
 else
     shfmt -i 4 -bn -ci -sr -d "${LINT_SHELL_FILES[@]}"
@@ -55,5 +55,3 @@ fi
 shellcheck "${LINT_SHELL_FILES[@]}"
 
 vermin -vvv --no-tips -q -t=3.7 --violations "${LINT_PYTHON_FILES[@]}"
-
-flake8 --show-source "${LINT_PYTHON_FILES[@]}"
