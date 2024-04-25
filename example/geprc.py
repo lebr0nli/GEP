@@ -1,12 +1,19 @@
+from __future__ import annotations
+
 from prompt_toolkit.key_binding import KeyBindings
 
 BINDINGS = KeyBindings()
 
-DONT_REAPT = {
+"""
+# You can add your own commands here.
+# For example:
+DONT_REPEAT = {
     # your functions:
-    # 'foo',
-    # 'bar'
+    'foo',
+    'bar'
 }
+"""
+DONT_REPEAT: set[str] = set()  # You can modify this line if you want to add your own commands.
 
 """
 # Append your key binding below!

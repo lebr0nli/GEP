@@ -26,3 +26,19 @@ ignore = [
 [tool.ruff.lint.isort]
 known-third-party = ["gdb", "prompt_toolkit"]
 force-single-line = true
+
+[tool.mypy]
+strict_optional = false
+check_untyped_defs = true
+allow_redefinition = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+show_error_context = true
+pretty = true
+show_error_codes = true
+
+disable_error_code = [
+    # https://github.com/python/mypy/issues/6232
+    "assignment"
+]

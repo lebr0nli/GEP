@@ -46,6 +46,8 @@ else
     ruff format --diff
 fi
 
+mypy "${LINT_PYTHON_FILES[@]}"
+
 if [[ $FIX == 1 ]]; then
     shfmt -i 4 -bn -ci -sr -w "${LINT_SHELL_FILES[@]}"
 else
