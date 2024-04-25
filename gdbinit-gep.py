@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import atexit
 import os
 import re
@@ -7,15 +9,12 @@ import sys
 import tempfile
 import threading
 import traceback
+import typing as T
 from glob import glob
 from shutil import which
 from string import ascii_letters
 from subprocess import PIPE
 from subprocess import Popen
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
 
 import gdb
 
@@ -34,6 +33,7 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit import print_formatted_text
 from prompt_toolkit.application import run_in_terminal
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+from prompt_toolkit.completion import CompleteEvent
 from prompt_toolkit.completion import Completer
 from prompt_toolkit.completion import Completion
 from prompt_toolkit.document import Document
@@ -53,7 +53,7 @@ MULTI_LINE_COMMANDS = {"commands", "if", "while", "py", "python", "define", "doc
 # I just collect some common used commands which should not be repeated.
 # If you have some user-define function, add your command into the list manually.
 # If you found a command should/shouldn't in this list, please let me know on the issue page, thanks!
-DONT_REPEAT = {
+DONT_REPEAT: set[str] = {
     # original GDB
     "attach",
     "run",
@@ -98,45 +98,45 @@ except ImportError:
 
 
 # function for logging
-def print_info(s):
+def print_info(s: str) -> None:
     print_formatted_text(FormattedText([("#00FFFF", s)]), file=sys.__stdout__)
 
 
-def print_warning(s):
+def print_warning(s: str) -> None:
     print_formatted_text(FormattedText([("#FFCC00", s)]), file=sys.__stdout__)
 
 
-def get_gdb_completes(query: str) -> List[str]:
-    completions_limit = gdb.parameter("max-completions")
+def get_gdb_completes(query: str) -> list[str]:
+    completions_limit = T.cast(int, gdb.parameter("max-completions"))
     if completions_limit == -1:
         completions_limit = 0xFFFFFFFF
     if completions_limit == 0:
-        return
+        return []
     if query.strip() and query[-1].isspace():
         # fuzzing all possible commands if the text before cursor endswith space
         all_completions = []
         for c in ascii_letters + "_-":
             if completions_limit <= 0:
                 break
-            completions = gdb.execute("complete %s" % query + c, to_string=True).splitlines()[
+            completions = gdb.execute(f"complete {query + c}", to_string=True).splitlines()[
                 :completions_limit
             ]
             all_completions.extend(completions)
             completions_limit -= len(completions)
     else:
-        all_completions = gdb.execute("complete %s" % query, to_string=True).splitlines()[
+        all_completions = gdb.execute(f"complete {query}", to_string=True).splitlines()[
             :completions_limit
         ]
 
     return all_completions
 
 
-def safe_get_help_docs(command: str) -> Optional[str]:
+def safe_get_help_docs(command: str) -> str | None:
     """
     A wrapper for gdb.execute('help <command>', to_string=True), but return None if gdb raise an exception.
     """
     try:
-        return gdb.execute("help %s" % command, to_string=True).strip()
+        return gdb.execute(f"help {command}", to_string=True).strip()
     except gdb.error:
         return None
 
@@ -151,7 +151,7 @@ def should_get_help_docs(completion: str) -> bool:
     return safe_get_help_docs(parent_command) != safe_get_help_docs(completion)
 
 
-def get_gdb_completion_and_status(query: str) -> Tuple[List[str], bool]:
+def get_gdb_completion_and_status(query: str) -> tuple[list[str], bool]:
     """
     Return all possible completions and whether we need to get help docs for all completions.
     """
@@ -163,7 +163,7 @@ def get_gdb_completion_and_status(query: str) -> Tuple[List[str], bool]:
     return all_completions, should_get_all_help_docs
 
 
-def create_fzf_process(query, preview: str = "") -> Popen:
+def create_fzf_process(query: str, preview: str = "") -> Popen:
     """
     Create a fzf process with given query and preview command.
     """
@@ -172,16 +172,16 @@ def create_fzf_process(query, preview: str = "") -> Popen:
     if query.startswith("!"):
         # ! in the beginning of query means we want to run the command directly for fzf
         query = "^" + query
-    cmd = FZF_RUN_CMD + ("--query", query)
+    cmd: tuple[str, ...] = FZF_RUN_CMD + ("--query", query)
     if preview:
         cmd += FZF_PRVIEW_WINDOW_ARGS
         cmd += ("--preview", preview)
     return Popen(cmd, stdin=PIPE, stdout=PIPE, text=True)
 
 
-def create_preview_fifos():
+def create_preview_fifos() -> tuple[str, str]:
     """
-    Create a temporary directory and two FIFOs in it.
+    Create a temporary directory and two FIFOs in it, return the paths of these FIFOs.
 
     This is modified from:
     https://github.com/infokiller/config-public/blob/652b4638a0a0ffed9743fa9e0ad2a8d4e4e90572/.config/ipython/profile_default/startup/ext/fzf_history.py#L128
@@ -198,7 +198,7 @@ def create_preview_fifos():
 def fzf_reverse_search(event: KeyPressEvent):
     """Reverse search history with fzf."""
 
-    def _fzf_reverse_search():
+    def _fzf_reverse_search() -> None:
         global HISTORY_FILENAME
         if not os.path.exists(HISTORY_FILENAME):
             # just create an empty file
@@ -225,7 +225,7 @@ def fzf_tab_autocomplete(event: KeyPressEvent):
     Tab autocomplete with fzf.
     """
 
-    def _fzf_tab_autocomplete():
+    def _fzf_tab_autocomplete() -> None:
         target_text = (
             event.app.current_buffer.document.text_before_cursor.lstrip()
         )  # Ignore leading whitespaces
@@ -291,8 +291,8 @@ class FzfTabCompletePreviewThread(threading.Thread):
     """
 
     def __init__(
-        self, fifo_input_path: str, fifo_output_path: str, completion_help_docs: Dict, **kwargs
-    ):
+        self, fifo_input_path: str, fifo_output_path: str, completion_help_docs: dict, **kwargs
+    ) -> None:
         super().__init__(**kwargs)
         self.fifo_input_path = fifo_input_path
         self.fifo_output_path = fifo_output_path
@@ -315,7 +315,7 @@ class FzfTabCompletePreviewThread(threading.Thread):
                         if help_doc is not None:
                             fifo_output.write(help_doc)
 
-    def stop(self):
+    def stop(self) -> None:
         self.is_done.set()
         with open(self.fifo_input_path, "w", encoding="utf-8") as f:
             f.close()
@@ -327,16 +327,16 @@ class UserParamater(gdb.Parameter):
 
     def __init__(
         self,
-        name,
-        default_value,
-        set_show_doc,
-        parameter_class,
-        help_doc="",
-        enum_sequence=None,
-    ):
+        name: str,
+        default_value: T.Any,
+        set_show_doc: str,
+        parameter_class: int,
+        help_doc: str = "",
+        enum_sequence: T.Sequence | None = None,
+    ) -> None:
         self.set_show_doc = set_show_doc
-        self.set_doc = "Set %s." % self.set_show_doc
-        self.show_doc = "Show %s." % self.set_show_doc
+        self.set_doc = f"Set {self.set_show_doc}."
+        self.show_doc = f"Show {self.set_show_doc}."
         self.__doc__ = help_doc.strip() or None
         if enum_sequence:
             super().__init__(name, gdb.COMMAND_NONE, parameter_class, enum_sequence)
@@ -344,7 +344,7 @@ class UserParamater(gdb.Parameter):
             super().__init__(name, gdb.COMMAND_NONE, parameter_class)
         self.value = default_value
 
-    def get_set_string(self):
+    def get_set_string(self) -> str:
         if not self.gep_loaded:
             return ""
         svalue = self.value
@@ -353,7 +353,7 @@ class UserParamater(gdb.Parameter):
             svalue = "on" if svalue else "off"
         return f"Set {self.set_show_doc} to {svalue!r}."
 
-    def get_show_string(self, svalue):
+    def get_show_string(self, svalue) -> str:
         if not self.gep_loaded:
             return ""
         return f"{self.set_show_doc.capitalize()} is {svalue!r}."
@@ -382,31 +382,24 @@ class GDBHistory(FileHistory):
     Manage your GDB History
     """
 
-    def __init__(self, filename, ignore_duplicates=False):
+    def __init__(self, filename: str, ignore_duplicates: bool = False) -> None:
         self.ignore_duplicates = ignore_duplicates
         super().__init__(filename=filename)
 
-    def load_history_strings(self):
-        temp_strings = []
-
-        if os.path.exists(self.filename):
-            with open(self.filename, "rb") as f:
-                for line in f:
-                    line = line.decode("utf-8")
-                    string = line.strip()
-                    temp_strings.append(string)
-
+    def load_history_strings(self) -> list[str]:
         strings = []
-        for string in reversed(temp_strings):
-            if self.ignore_duplicates and string in strings:
-                continue
-            if string:
-                strings.append(string)
+        if os.path.exists(self.filename):
+            with open(self.filename) as f:
+                for string in reversed(f.readlines()):
+                    if self.ignore_duplicates and string in strings:
+                        continue
+                    if string:
+                        strings.append(string)
         return strings
 
-    def store_string(self, string):
-        with open(self.filename, "ab") as f:
-            f.write(string.strip().encode() + b"\n")
+    def store_string(self, string: str) -> None:
+        with open(self.filename, "a") as f:
+            f.write(string.strip() + "\n")
 
 
 class GDBCompleter(Completer):
@@ -414,10 +407,10 @@ class GDBCompleter(Completer):
     Completer of GDB
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def get_completions(self, document, complete_event):
+    def get_completions(self, document: Document, complete_event: CompleteEvent):
         target_text = document.text_before_cursor.lstrip()  # Ignore leading whitespaces
 
         cursor_idx_in_completion = len(target_text)
@@ -455,7 +448,7 @@ def gep_prompt(current_prompt: str) -> None:
     else:
         print_warning("`set history save on` for better experience with GEP")
         gdb_history = InMemoryHistory()
-    session = PromptSession(
+    session: PromptSession = PromptSession(
         history=gdb_history,
         enable_history_search=True,
         auto_suggest=AutoSuggestFromHistory(),
@@ -572,7 +565,7 @@ def hijack_prompt() -> None:
 def main() -> None:
     # source the gdbinit-gep config in the same directory
     gep_path = os.path.dirname(os.path.realpath(__file__))
-    gdb.execute("source %s" % os.path.join(gep_path, "gdbinit-gep"))
+    gdb.execute(f"source {os.path.join(gep_path, 'gdbinit-gep')}")
 
     # Hijack the prompt of GDB to use our own prompt
     hijack_prompt()
