@@ -29,7 +29,7 @@ echo "Creating virtualenv in path: ${VENV_PATH}"
 "$PYTHON" -m venv "$VENV_PATH"
 PYTHON=$VENV_PATH/bin/python
 "$PYTHON" -m pip install -U pip
-"$VENV_PATH/bin/pip" install --no-cache-dir -U prompt_toolkit
+"$VENV_PATH/bin/pip" install --no-cache-dir prompt_toolkit==3.0.40
 
 # copy example config to INSTALL_PATH if not exists
 cp -n "$INSTALL_PATH"/example/* "$INSTALL_PATH"
