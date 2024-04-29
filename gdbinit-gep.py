@@ -195,7 +195,7 @@ def create_preview_fifos() -> tuple[str, str]:
     return fifo_input_path, fifo_output_path
 
 
-def fzf_reverse_search(event: KeyPressEvent):
+def fzf_reverse_search(event: KeyPressEvent) -> None:
     """Reverse search history with fzf."""
 
     def _fzf_reverse_search() -> None:
@@ -220,7 +220,7 @@ def fzf_reverse_search(event: KeyPressEvent):
     run_in_terminal(_fzf_reverse_search)
 
 
-def fzf_tab_autocomplete(event: KeyPressEvent):
+def fzf_tab_autocomplete(event: KeyPressEvent) -> None:
     """
     Tab autocomplete with fzf.
     """
@@ -353,7 +353,7 @@ class UserParamater(gdb.Parameter):
             svalue = "on" if svalue else "off"
         return f"Set {self.set_show_doc} to {svalue!r}."
 
-    def get_show_string(self, svalue) -> str:
+    def get_show_string(self, svalue: str) -> str:
         if not self.gep_loaded:
             return ""
         return f"{self.set_show_doc.capitalize()} is {svalue!r}."
@@ -410,7 +410,9 @@ class GDBCompleter(Completer):
     def __init__(self) -> None:
         super().__init__()
 
-    def get_completions(self, document: Document, complete_event: CompleteEvent):
+    def get_completions(
+        self, document: Document, complete_event: CompleteEvent
+    ) -> T.Iterator[Completion]:
         target_text = document.text_before_cursor.lstrip()  # Ignore leading whitespaces
 
         cursor_idx_in_completion = len(target_text)
