@@ -36,7 +36,7 @@ cp -n "$INSTALL_PATH"/example/* "$INSTALL_PATH"
 
 # append gep to gdbinit
 if ! grep -q '^[^#]*source.*/gdbinit-gep.py' ~/.gdbinit; then
-    printf '\nsource%s\n' "$GDBINIT_GEP_PY" >> ~/.gdbinit
+    printf '\nsource %s\n' "$GDBINIT_GEP_PY" >> ~/.gdbinit
 fi
 
 exit 0
