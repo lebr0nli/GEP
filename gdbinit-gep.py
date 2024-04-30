@@ -353,7 +353,7 @@ class UserParamater(gdb.Parameter):
             svalue = "on" if svalue else "off"
         return f"Set {self.set_show_doc} to {svalue!r}."
 
-    def get_show_string(self, svalue: str) -> str:
+    def get_show_string(self, svalue: T.Any) -> str:
         if not self.gep_loaded:
             return ""
         return f"{self.set_show_doc.capitalize()} is {svalue!r}."
