@@ -22,6 +22,11 @@ And also, GEP has some awesome features already, you can directly use it!
   - floating window (Similar to IPython's auto-completion)
 - [fish](https://fishshell.com)-like autosuggestions (<kbd>→</kbd> key to accept the suggestion)
 - has the ability to build custom key binding and its callback function by modifying `geprc.py`
+- compatible with the latest version of your favorite GDB plug-ins:
+  - [pwndbg/pwndbg](https://github.com/pwndbg/pwndbg)
+  - [hugsy/gef](https://github.com/hugsy/gef)
+  - [bata24/gef](https://github.com/bata24/gef.git)
+  - [cyrus-and/gdb-dashboard](https://github.com/cyrus-and/gdb-dashboard)
 
 ## How to install it?
 
@@ -70,7 +75,7 @@ However, the side effects are avoidable, here are the guides to avoid them:
 
 Somehow, GEP breaks the TUI mode in GDB, so it's advisable not to use GDB's built-in TUI when working with GEP (refer to issue #13).
 
-Alternatively, I personally recommend trying [pwndbg/pwndbg](https://github.com/pwndbg/pwndbg) or [hugsy/gef](https://github.com/hugsy/gef) for their user-friendly features.
+Instead of using gdb TUI, I personally recommend trying [pwndbg/pwndbg](https://github.com/pwndbg/pwndbg), [hugsy/gef](https://github.com/hugsy/gef) and [cyrus-and/gdb-dashboard](https://github.com/cyrus-and/gdb-dashboard) to enhance your debugging experience.
 
 > If you have any ideas to resolve this issue, PRs are greatly appreciated. 🙏
 
@@ -81,7 +86,7 @@ The GDB Python API event: `gdb.event.before_prompt` may be called only once.
 So if you are using a GDB plug-in that is listening on this event, this plug-in will cause some bugs.
 
 > [!NOTE]
-> As far as I know, pwndbg and gef won't be bothered by this side effect now.
+> pwndbg, gef, and gdb-dashboard won't be affected by this side effect so far, but please open an issue if you find any plug-in that is affected by this side effect.
 
 To avoid this, you can change the callback function by adding them to `gdb.prompt_hook`, `gdb.prompt_hook` has almost
 the same effects with `event.before_prompt`, but `gdb.prompt_hook` can be directed invoke, so this plug-in still can
