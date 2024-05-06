@@ -1,20 +1,10 @@
 #!/bin/bash
 set -ex
 
-# create a folder for GEP
-INSTALL_PATH=${XDG_DATA_HOME:-$HOME/.local/share}/GEP
-mkdir -p "$INSTALL_PATH"
-GDBINIT_GEP_PY=$INSTALL_PATH/gdbinit-gep.py
-echo "Installing GEP to $INSTALL_PATH ..."
-
-if [ -d "$INSTALL_PATH/.git" ]; then
-    # git pull if exists
-    cd "$INSTALL_PATH"
-    git pull
-else
-    # git clone the repo if not exists
-    git clone https://github.com/lebr0nli/GEP.git --depth=1 "$INSTALL_PATH"
-fi
+cd "$(dirname "${BASH_SOURCE[0]}")"
+GEP_BASE=$(pwd)
+GDBINIT_GEP_PY=$GEP_BASE/gdbinit-gep.py
+echo "GEP installation path: $GEP_BASE"
 
 # find python path
 PYVER=$(gdb -batch -q --nx -ex 'pi import platform; print(".".join(platform.python_version_tuple()[:2]))')
@@ -24,19 +14,23 @@ if ! uname -a | grep -q Darwin > /dev/null; then
 fi
 
 # create venv and install prompt_toolkit
-VENV_PATH=$INSTALL_PATH/.venv
+VENV_PATH=$GEP_BASE/.venv
 echo "Creating virtualenv in path: ${VENV_PATH}"
 "$PYTHON" -m venv "$VENV_PATH"
 PYTHON=$VENV_PATH/bin/python
+echo "Installing prompt_toolkit"
 "$PYTHON" -m pip install -U pip
 "$VENV_PATH/bin/pip" install --no-cache-dir prompt_toolkit==3.0.40
 
-# copy example config to INSTALL_PATH if not exists
-cp -n "$INSTALL_PATH"/example/* "$INSTALL_PATH"
+# copy example config to GEP_BASE if not exists
+echo "Copying default config to $GEP_BASE if not exists"
+cp -n "$GEP_BASE"/example/* "$GEP_BASE"
 
-# append gep to gdbinit
+# append GEP to gdbinit if not exists
 if ! grep -q '^[^#]*source.*/gdbinit-gep.py' ~/.gdbinit; then
-    printf '\nsource %s\n' "$GDBINIT_GEP_PY" >> ~/.gdbinit
+    echo "Appending GEP to ~/.gdbinit"
+    printf '\n# Please make sure the following line is always the last in this file\n' >> ~/.gdbinit
+    printf 'source %s\n' "$GDBINIT_GEP_PY" >> ~/.gdbinit
 fi
 
 exit 0
