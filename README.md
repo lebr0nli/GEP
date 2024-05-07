@@ -53,9 +53,7 @@ git clone --depth 1 https://github.com/lebr0nli/GEP.git ~/.local/share/GEP
 If your `~/.gdbinit` is something like this: `source ~/.local/share/GEP/gdbinit-gep.py`, then you can update GEP by:
 
 ```shell
-cd ~/.local/share/GEP
-git pull
-./install.sh
+cd ~/.local/share/GEP && git pull && ./install.sh
 ```
 
 ## For more configuration
