@@ -1,6 +1,9 @@
-__pycache__/*
-.venv/*
+__pycache__
+.venv
 .gdb_history
+.DS_Store
+.mypy_cache
+.ruff_cache
 gdbinit-gep
 geprc.py
 !example/gdbinit-gep
