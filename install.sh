@@ -18,9 +18,9 @@ VENV_PATH=$GEP_BASE/.venv
 echo "Creating virtualenv in path: ${VENV_PATH}"
 "$PYTHON" -m venv "$VENV_PATH"
 PYTHON=$VENV_PATH/bin/python
-echo "Installing prompt_toolkit"
+echo "Installing dependencies"
 "$PYTHON" -m pip install -U pip
-"$VENV_PATH/bin/pip" install --no-cache-dir prompt_toolkit==3.0.40
+"$VENV_PATH/bin/pip" install --no-cache-dir -e .
 
 # copy example config to GEP_BASE if not exists
 echo "Copying default config to $GEP_BASE if not exists"

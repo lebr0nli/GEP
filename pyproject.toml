@@ -1,6 +1,34 @@
+[tool.poetry]
+name = "GEP"
+version = "2024.05"
+description = "GDB Enhanced Prompt"
+authors = ["Alan Li <61896187+lebr0nli@users.noreply.github.com>"]
+readme = "README.md"
+packages = [
+    { include = "gdbinit-gep.py" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+prompt-toolkit = "^3.0.43"
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.4.4"
+mypy = "^1.10.0"
+types-gdb = "^12.1.4.20240408"
+vermin = "^1.6.0"
+pytest = "8.2.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
 [tool.ruff]
 line-length = 100
-target-version = "py37"
+target-version = "py38"
 
 [tool.ruff.lint]
 select = [
@@ -28,6 +56,7 @@ known-third-party = ["gdb", "prompt_toolkit"]
 force-single-line = true
 
 [tool.mypy]
+files = ["gdbinit-gep.py", "example/geprc.py"]
 strict_optional = false
 check_untyped_defs = true
 allow_redefinition = true
