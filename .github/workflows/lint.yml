@@ -8,12 +8,13 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Install dependencies
       run: |
-        python3 -m pip install --user mypy ruff types-gdb prompt_toolkit==3.0.40 vermin
         sudo apt-get update && sudo apt-get install -y shellcheck shfmt
+        curl -sSL https://install.python-poetry.org | python3 -
+        poetry install --with dev
 
     - name: Run linters
       run: |
-        ./lint.sh
+        source .venv/bin/activate && ./lint.sh
