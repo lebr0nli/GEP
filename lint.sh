@@ -62,4 +62,4 @@ fi
 
 shellcheck "${LINT_SHELL_FILES[@]}"
 
-vermin -vvv --no-tips -q -t=3.8 --violations "${VERMIN_TARGETS[@]}"
+vermin -vvv --no-tips -q -t=3.8- --violations "${VERMIN_TARGETS[@]}"
