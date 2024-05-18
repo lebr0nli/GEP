@@ -1,5 +1,32 @@
 #!/bin/bash
-set -ex
+
+set -o errexit
+
+help_and_exit() {
+    echo "Usage: $0 [-d|--dev]"
+    cat << EOF
+  -d,  --dev         install development dependencies
+EOF
+    exit 1
+}
+
+if [[ $# -gt 1 ]]; then
+    help_and_exit
+fi
+
+DEV=0
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -d | --dev)
+            DEV=1
+            shift
+            ;;
+        *)
+            help_and_exit
+            ;;
+    esac
+done
 
 cd "$(dirname "${BASH_SOURCE[0]}")"
 GEP_BASE=$(pwd)
@@ -18,9 +45,13 @@ VENV_PATH=$GEP_BASE/.venv
 echo "Creating virtualenv in path: ${VENV_PATH}"
 "$PYTHON" -m venv "$VENV_PATH"
 PYTHON=$VENV_PATH/bin/python
-echo "Installing prompt_toolkit"
+echo "Installing dependencies"
 "$PYTHON" -m pip install -U pip
-"$VENV_PATH/bin/pip" install --no-cache-dir prompt_toolkit==3.0.40
+if [[ $DEV == 1 ]]; then
+    poetry install --with dev
+else
+    "$VENV_PATH/bin/pip" install --no-cache-dir -e .
+fi
 
 # copy example config to GEP_BASE if not exists
 echo "Copying default config to $GEP_BASE if not exists"
