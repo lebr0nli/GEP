@@ -4,7 +4,7 @@
 set -o errexit
 
 help_and_exit() {
-    echo "Usage: ./lint.sh [-f|--filter]"
+    echo "Usage: $0 [-f|--filter]"
     echo "  -f,  --filter         format code instead of just checking the format"
     exit 1
 }
@@ -29,9 +29,11 @@ done
 
 set -o xtrace
 
+source ./.venv/bin/activate
+
 VERMIN_TARGETS=(
     "gdbinit-gep.py"
-    "example/geprc.py",
+    "example/geprc.py"
     "tests/"
 )
 LINT_SHELL_FILES=(
