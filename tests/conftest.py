@@ -14,6 +14,22 @@ STARTUP_BANNER = b"GEP is running now!"
 GDB_HISTORY_NAME = ".gdb_history"
 
 
+def run_with_screen_256color(
+    cmd: list[str], capture_output: bool = False
+) -> subprocess.CompletedProcess:
+    """
+    Run a command with `TERM=screen-256color`.
+
+    :param list[str] cmd: The command to run.
+    :param bool capture_output: Whether to capture the output.
+    :return: The result of the command.
+    :rtype: subprocess.CompletedProcess
+    """
+    env = os.environ.copy()
+    env["TERM"] = "screen-256color"
+    return subprocess.run(cmd, capture_output=capture_output, env=env)
+
+
 class GDBSession:
     def __init__(self) -> None:
         """
@@ -53,7 +69,9 @@ class GDBSession:
         if gdb_args:
             cmd.extend(gdb_args)
 
-        self.session_name = subprocess.run(cmd, capture_output=True).stdout.decode().strip()
+        self.session_name = (
+            run_with_screen_256color(cmd, capture_output=True).stdout.decode().strip()
+        )
         self.__session_started = True
 
         # wait `STARTUP_BANNER` appears in pane
@@ -74,7 +92,7 @@ class GDBSession:
         """
         self.tmpdir.cleanup()
         if self.__session_started:
-            subprocess.run(["tmux", "kill-session", "-t", self.session_name])
+            run_with_screen_256color(["tmux", "kill-session", "-t", self.session_name])
             self.__session_started = False
 
     def check_session_started(func: T.Callable) -> T.Callable:
@@ -103,7 +121,7 @@ class GDBSession:
         :param str literal: The literal string to send to the GDB session.
         :return: None
         """
-        subprocess.run(["tmux", "send-keys", "-l", "-t", self.session_name, literal])
+        run_with_screen_256color(["tmux", "send-keys", "-l", "-t", self.session_name, literal])
         time.sleep(1)
 
     @check_session_started
@@ -114,7 +132,7 @@ class GDBSession:
         :param str key: The key to send to the GDB session.
         :return: None
         """
-        subprocess.run(["tmux", "send-keys", "-t", self.session_name, key])
+        run_with_screen_256color(["tmux", "send-keys", "-t", self.session_name, key])
         time.sleep(1)
 
     @check_session_started
@@ -125,9 +143,9 @@ class GDBSession:
         :return: None
         :rtype: None
         """
-        subprocess.run(["tmux", "send-keys", "-t", self.session_name, "C-l"])
+        run_with_screen_256color(["tmux", "send-keys", "-t", self.session_name, "C-l"])
         time.sleep(1)
-        subprocess.run(["tmux", "clear-history", "-t", self.session_name])
+        run_with_screen_256color(["tmux", "clear-history", "-t", self.session_name])
 
     @check_session_started
     def capture_pane(self, with_color: bool = False) -> bytes:
@@ -141,7 +159,7 @@ class GDBSession:
         cmd = ["tmux", "capture-pane", "-p", "-t", self.session_name]
         if with_color:
             cmd.append("-e")
-        return subprocess.run(cmd, capture_output=True).stdout.rstrip(b"\n")
+        return run_with_screen_256color(cmd, capture_output=True).stdout.rstrip(b"\n")
 
     def __enter__(self) -> GDBSession:
         return self
