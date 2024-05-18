@@ -1,0 +1,28 @@
+name: Build and run GEP
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: |
+        sudo apt-get update && sudo apt-get install -y git gdb python3 python3-pip python3-venv tmux
+        git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+        ~/.fzf/install --all
+        ./install.sh
+
+    - name: Check GEP is running normally
+      run: |
+        gdb --version
+        export PATH=~/.fzf/bin:$PATH
+        tmux new-session -d -s check gdb -q
+        sleep 5
+        OUTPUT=$(tmux capture-pane -p -t check)
+        echo $OUTPUT
+        grep -q "GEP is running" <(echo "$OUTPUT")
+        ! grep -q "Install fzf for better experience with GEP" <(echo "$OUTPUT")
