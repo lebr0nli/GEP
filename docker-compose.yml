@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  base: &base-spec
+    build: .
+    platform: linux/amd64
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_PTRACE
+
+  ubuntu22.04:
+    <<: *base-spec
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        image: ubuntu:22.04
+
+  ubuntu20.04:
+    <<: *base-spec
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        image: ubuntu:20.04
