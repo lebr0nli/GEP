@@ -2,7 +2,7 @@ name: Test GEP on different platforms
 on: [push, pull_request]
 
 jobs:
-  docker:
+  tests:
     strategy:
       fail-fast: false
       matrix:
