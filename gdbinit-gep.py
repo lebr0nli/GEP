@@ -262,6 +262,7 @@ def fzf_tab_autocomplete(event: KeyPressEvent) -> None:
         # The query should be "fun", but using the longest common prefix and split by non-word characters
         # We get "f" as the query
         # TODO/FIXME: For debugging C++/Rust code, we need more complex regex to get the more accurate query
+        # Note: The behaviour might be different from different gdb versions
         query = re.split(r"\W+", prefix)[-1]
         if prefix:
             completion_idx = len(prefix) - len(query)
@@ -297,6 +298,7 @@ def fzf_tab_autocomplete(event: KeyPressEvent) -> None:
                 # (gdb) complete b 'm
                 # ...
                 # b main'
+                # Note: The behaviour might be different from different gdb versions
                 stdout = "'" + stdout
             event.app.current_buffer.insert_text(stdout[len(query) :].rstrip())
 
