@@ -108,29 +108,34 @@ def print_warning(s: str) -> None:
     print_formatted_text(FormattedText([("#FFCC00", s)]), file=sys.__stdout__)
 
 
-def get_gdb_completes(query: str) -> list[str]:
-    completions_limit = T.cast(int, gdb.parameter("max-completions"))
-    if completions_limit == -1:
-        completions_limit = 0xFFFFFFFF
-    if completions_limit == 0:
-        return []
-    if query.strip() and query[-1].isspace():
-        # fuzzing all possible commands if the text before cursor endswith space
-        all_completions = []
-        for c in ascii_letters + "_-":
-            if completions_limit <= 0:
-                break
-            completions = gdb.execute(f"complete {query + c}", to_string=True).splitlines()[
+if hasattr(gdb, "execute_mi"): # This feature is only available in GDB 14.1 or later
+    def get_gdb_completes(query: str) -> list[str]:
+        return gdb.execute_mi("-complete", query)["matches"]  # type: ignore[attr-defined]
+else:
+
+    def get_gdb_completes(query: str) -> list[str]:
+        completions_limit = T.cast(int, gdb.parameter("max-completions"))
+        if completions_limit == -1:
+            completions_limit = 0xFFFFFFFF
+        if completions_limit == 0:
+            return []
+        if query.strip() and query[-1].isspace():
+            # fuzzing all possible commands if the text before cursor endswith space
+            all_completions = []
+            for c in ascii_letters + "_-":
+                if completions_limit <= 0:
+                    break
+                completions = gdb.execute(f"complete {query + c}", to_string=True).splitlines()[
+                    :completions_limit
+                ]
+                all_completions.extend(completions)
+                completions_limit -= len(completions)
+        else:
+            all_completions = gdb.execute(f"complete {query}", to_string=True).splitlines()[
                 :completions_limit
             ]
-            all_completions.extend(completions)
-            completions_limit -= len(completions)
-    else:
-        all_completions = gdb.execute(f"complete {query}", to_string=True).splitlines()[
-            :completions_limit
-        ]
 
-    return all_completions
+        return all_completions
 
 
 def safe_get_help_docs(command: str) -> str | None:
