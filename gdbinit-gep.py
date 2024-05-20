@@ -345,7 +345,7 @@ class FzfTabCompletePreviewThread(threading.Thread):
         self.join()
 
 
-class UserParamater(gdb.Parameter):
+class UserParameter(gdb.Parameter):
     gep_loaded = False
 
     def __init__(
@@ -382,7 +382,7 @@ class UserParamater(gdb.Parameter):
         return f"{self.set_show_doc.capitalize()} is {svalue!r}."
 
 
-single_column_tab_complete = UserParamater(
+single_column_tab_complete = UserParameter(
     "single-column-tab-complete",
     True,
     "whether to use single column for tab completion",
@@ -463,7 +463,7 @@ class GDBCompleter(Completer):
 
 def gep_prompt(current_prompt: str) -> None:
     print_info("GEP is running now!")
-    UserParamater.gep_loaded = True
+    UserParameter.gep_loaded = True
     history_on = gdb.parameter("history save")
     if history_on:
         global HISTORY_FILENAME
