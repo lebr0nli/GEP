@@ -108,7 +108,22 @@ def print_warning(s: str) -> None:
     print_formatted_text(FormattedText([("#FFCC00", s)]), file=sys.__stdout__)
 
 
-if hasattr(gdb, "execute_mi"): # This feature is only available in GDB 14.1 or later
+def common_prefix(m: list[str]) -> str:
+    """
+    Given a list of strings, returns the longest common leading component
+    """
+    if not m:
+        return ""
+    s1 = min(m)
+    s2 = max(m)
+    for i, c in enumerate(s1):
+        if c != s2[i]:
+            return s1[:i]
+    return s1
+
+
+if hasattr(gdb, "execute_mi"):  # This feature is only available in GDB 14.1 or later
+
     def get_gdb_completes(query: str) -> list[str]:
         return gdb.execute_mi("-complete", query)["matches"]  # type: ignore[attr-defined]
 else:
@@ -239,8 +254,7 @@ def fzf_tab_autocomplete(event: KeyPressEvent) -> None:
         all_completions, should_get_all_help_docs = get_gdb_completion_and_status(target_text)
         if not all_completions:
             return
-        prefix = os.path.commonprefix(all_completions)
-        prefix = os.path.commonprefix([prefix, target_text])
+        prefix = common_prefix([common_prefix(all_completions), target_text])
         # TODO/FIXME: qeury might not be the expected one, e.g.
         # (gdb) complete b fun
         # b foo::B::func()
