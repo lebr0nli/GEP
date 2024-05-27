@@ -1,5 +1,16 @@
 name: Test GEP on different platforms
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**'
+      - '!*.md'
+
+  pull_request:
+    paths:
+      - '**'
+      - '!*.md'
 
 jobs:
   tests:
