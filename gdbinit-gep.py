@@ -430,7 +430,7 @@ class GDBHistory(FileHistory):
         strings = []
         if os.path.exists(self.filename):
             with open(self.filename) as f:
-                for string in reversed(f.readlines()):
+                for string in reversed(f.read().splitlines()):
                     if self.ignore_duplicates and string in strings:
                         continue
                     if string:
