@@ -73,9 +73,10 @@ DONT_REPEAT: set[str] = {
 
 FZF_RUN_CMD = (
     "fzf",
-    "--select-1",
     "--bind=tab:down",
     "--bind=btab:up",
+    "--cycle",
+    "--select-1",
     "--exit-0",
     "--tiebreak=index",
     "--no-multi",
