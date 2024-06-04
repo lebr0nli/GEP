@@ -221,7 +221,10 @@ def fzf_reverse_search(event: KeyPressEvent) -> None:
     """Reverse search history with fzf."""
 
     def _fzf_reverse_search() -> None:
-        global HISTORY_FILENAME
+        # run_in_terminal will hide the prompt, we show the prompt while running fzf
+        # so user can see the original prompt while selecting completions, which is more user-friendly
+        event.app.renderer.render(event.app, event.app.layout, is_done=True)
+
         if not os.path.exists(HISTORY_FILENAME):
             # just create an empty file
             with open(HISTORY_FILENAME, "w"):
@@ -239,6 +242,10 @@ def fzf_reverse_search(event: KeyPressEvent) -> None:
             event.app.current_buffer.document = Document()  # clear buffer
             event.app.current_buffer.insert_text(stdout.strip())
 
+        # remove the prompt we showed after running fzf
+        event.app.output.cursor_up(1)
+        event.app.renderer.erase()
+
     run_in_terminal(_fzf_reverse_search)
 
 
@@ -254,6 +261,11 @@ def fzf_tab_autocomplete(event: KeyPressEvent) -> None:
         all_completions, should_get_all_help_docs = get_gdb_completion_and_status(target_text)
         if not all_completions:
             return
+
+        # run_in_terminal will hide the prompt, we show the prompt while running fzf
+        # so user can see the original prompt while selecting completions, which is more user-friendly
+        event.app.renderer.render(event.app, event.app.layout, is_done=True)
+
         prefix = common_prefix([common_prefix(all_completions), target_text])
         # TODO/FIXME: qeury might not be the expected one, e.g.
         # (gdb) complete b fun
@@ -301,6 +313,10 @@ def fzf_tab_autocomplete(event: KeyPressEvent) -> None:
                 # Note: The behaviour might be different from different gdb versions
                 stdout = "'" + stdout
             event.app.current_buffer.insert_text(stdout[len(query) :].rstrip())
+
+        # remove the prompt we showed after running fzf
+        event.app.output.cursor_up(1)
+        event.app.renderer.erase()
 
     run_in_terminal(_fzf_tab_autocomplete)
 
