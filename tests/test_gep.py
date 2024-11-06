@@ -1,5 +1,8 @@
 from conftest import GDBSession
 
+# TODO: Maybe a better way to handle this?
+FZF_POINTER = b"\xe2\x96\x8c"  # ▌
+
 
 def grey(b: bytes) -> bytes:
     """
@@ -57,7 +60,7 @@ def test_fzf_history_search(gdb_session: GDBSession) -> None:
     pane_content = gdb_session.capture_pane()
     assert b"> 11" in pane_content
     assert b"1/3" in pane_content
-    assert b"> print 11" in pane_content
+    assert FZF_POINTER + b" print 11" in pane_content
 
     # the selected history should be replaced in buffer
     gdb_session.send_key("Enter")
