@@ -12,6 +12,9 @@ on:
       - '**'
       - '!*.md'
 
+  schedule:
+    - cron: '0 1 * * *'
+
 jobs:
   build:
     strategy:
