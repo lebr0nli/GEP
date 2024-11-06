@@ -12,6 +12,7 @@ import pytest
 SESSION_STARTUP_TIMEOUT = 15
 STARTUP_BANNER = b"GEP is running now!"
 GDB_HISTORY_NAME = ".gdb_history"
+TIME_INTERVAL = 1
 
 
 def run_with_screen_256color(
@@ -79,7 +80,7 @@ class GDBSession:
         while time.time() - now < SESSION_STARTUP_TIMEOUT:
             if STARTUP_BANNER in self.capture_pane():
                 break
-            time.sleep(1)
+            time.sleep(TIME_INTERVAL)
         else:
             raise TimeoutError("GDB session did not start in time")
         self.clear_pane()
@@ -122,7 +123,7 @@ class GDBSession:
         :return: None
         """
         run_with_screen_256color(["tmux", "send-keys", "-l", "-t", self.session_name, literal])
-        time.sleep(1)
+        time.sleep(TIME_INTERVAL)
 
     @check_session_started
     def send_key(self, key: str) -> None:
@@ -133,7 +134,7 @@ class GDBSession:
         :return: None
         """
         run_with_screen_256color(["tmux", "send-keys", "-t", self.session_name, key])
-        time.sleep(1)
+        time.sleep(TIME_INTERVAL)
 
     @check_session_started
     def clear_pane(self) -> None:
@@ -144,7 +145,7 @@ class GDBSession:
         :rtype: None
         """
         run_with_screen_256color(["tmux", "send-keys", "-t", self.session_name, "C-l"])
-        time.sleep(1)
+        time.sleep(TIME_INTERVAL)
         run_with_screen_256color(["tmux", "clear-history", "-t", self.session_name])
 
     @check_session_started
