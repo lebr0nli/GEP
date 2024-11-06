@@ -28,7 +28,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Docker Build ${{ matrix.images }}
-      run: docker-compose build ${{ matrix.images }}
+      run: docker compose build ${{ matrix.images }}
 
     - name: Test on ${{ matrix.images }}
-      run: docker-compose run ${{ matrix.images }} ./tests.sh
+      run: docker compose run ${{ matrix.images }} ./tests.sh
