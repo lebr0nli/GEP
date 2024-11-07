@@ -22,3 +22,9 @@ services:
       dockerfile: Dockerfile
       args:
         image: ubuntu:20.04
+
+  arch:
+    <<: *base-spec
+    build:
+      context: .
+      dockerfile: Dockerfile.arch
