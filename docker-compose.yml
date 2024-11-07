@@ -7,6 +7,14 @@ services:
     cap_add:
       - SYS_PTRACE
 
+  ubuntu24.04:
+    <<: *base-spec
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        image: ubuntu:24.04
+
   ubuntu22.04:
     <<: *base-spec
     build:
@@ -22,3 +30,9 @@ services:
       dockerfile: Dockerfile
       args:
         image: ubuntu:20.04
+
+  arch:
+    <<: *base-spec
+    build:
+      context: .
+      dockerfile: Dockerfile.arch

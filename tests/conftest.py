@@ -55,9 +55,9 @@ class GDBSession:
 
         cmd = [
             "tmux",
-            "new-session",
             "-f",
             os.devnull,
+            "new-session",
             "-d",
             "-P",
             "-F",

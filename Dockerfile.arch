@@ -1,0 +1,26 @@
+FROM archlinux:latest
+
+# Install curl gdb python3 python3-pip python3-venv tmux git vim
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm \
+    python \
+    python-pip \
+    python-virtualenv \
+    tmux \
+    git \
+    gdb \
+    curl \
+    wget \
+    vim && \
+    curl -sSL https://install.python-poetry.org | python3 - && \
+    git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && \
+    ~/.fzf/install --all
+
+ENV PATH="/root/.fzf/bin:/root/.local/bin:${PATH}"
+
+COPY . /root/.local/share/GEP
+
+WORKDIR /root/.local/share/GEP
+
+RUN ./install.sh -d && \
+    poetry install --with dev
