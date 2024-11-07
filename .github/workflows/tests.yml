@@ -22,7 +22,7 @@ jobs:
       matrix:
         images: [ubuntu24.04, ubuntu22.04, ubuntu20.04, arch]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
     - uses: actions/checkout@v4
