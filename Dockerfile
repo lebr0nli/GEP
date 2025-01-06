@@ -14,15 +14,16 @@ RUN apt-get update && \
     curl \
     wget \
     vim && \
-    curl -sSL https://install.python-poetry.org | python3 - && \
     git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf && \
     ~/.fzf/install --all
 
 ENV PATH="/root/.fzf/bin:/root/.local/bin:${PATH}"
+
+COPY --from=ghcr.io/astral-sh/uv:0.5.14 /uv /bin/
 
 COPY . /root/.local/share/GEP
 
 WORKDIR /root/.local/share/GEP
 
 RUN ./install.sh -d && \
-    poetry install --with dev
+    uv sync --group dev
