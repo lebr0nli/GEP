@@ -26,8 +26,8 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update && sudo apt-get install -y shellcheck shfmt
-        curl -sSL https://install.python-poetry.org | python3 -
-        poetry install --with dev
+        curl -LsSf https://astral.sh/uv/0.5.14/install.sh | sh
+        ~/.local/bin/uv sync --group dev
 
     - name: Run linters
       run: |

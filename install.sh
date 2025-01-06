@@ -48,7 +48,7 @@ PYTHON=$VENV_PATH/bin/python
 echo "Installing dependencies"
 "$PYTHON" -m pip install -U pip
 if [[ $DEV == 1 ]]; then
-    poetry install --with dev
+    uv sync --group dev
 else
     "$VENV_PATH/bin/pip" install --no-cache-dir -e .
 fi
