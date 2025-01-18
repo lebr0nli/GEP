@@ -1,4 +1,4 @@
-name: Build and run GEP
+name: Build
 on:
   push:
     branches:
@@ -17,6 +17,7 @@ on:
 
 jobs:
   build:
+    name: Build and run GEP on Ubuntu 24.04 (${{ matrix.runner == 'ubuntu-24.04-arm' && 'aarch64' || 'x86_64' }})
     strategy:
       fail-fast: false
       matrix:
