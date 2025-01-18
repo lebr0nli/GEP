@@ -17,6 +17,7 @@ on:
 
 jobs:
   lint:
+    name: Lint
     strategy:
       fail-fast: false
     runs-on: ubuntu-22.04
