@@ -22,13 +22,19 @@ import gdb
 directory, file = os.path.split(__file__)
 directory = os.path.expanduser(directory)
 directory = os.path.abspath(directory)
-sys.path.append(directory)
 venv_path = os.path.join(directory, ".venv")
-if not os.path.exists(venv_path):
-    print("You might need to reinstall GEP, please check the latest version on Github")
-    sys.exit(1)
-site_pkgs_path = glob(os.path.join(venv_path, "lib/*/site-packages"))[0]
-site.addsitedir(site_pkgs_path)
+if os.path.exists(venv_path):
+    sys.path.append(directory)
+    site_pkgs_path = glob(os.path.join(venv_path, "lib/*/site-packages"))[0]
+    site.addsitedir(site_pkgs_path)
+else:
+    try:
+        import prompt_toolkit
+
+        del prompt_toolkit
+    except ImportError:
+        print("Failed to find prompt_toolkit and venv is not found")
+        sys.exit(1)
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit import print_formatted_text
