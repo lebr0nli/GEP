@@ -76,7 +76,7 @@ if [[ $SKIP_GDBINIT == 1 ]]; then
 else
     if ! grep -q '^[^#]*source.*/gdbinit-gep.py' ~/.gdbinit; then
         echo "Appending GEP to ~/.gdbinit"
-        printf '\n# Please make sure the following line is always the last in this file\n' >> ~/.gdbinit
+        printf '\n# Comment out the following line to disable GEP\n' >> ~/.gdbinit
         printf 'source %s\n' "$GDBINIT_GEP_PY" >> ~/.gdbinit
     fi
 fi
