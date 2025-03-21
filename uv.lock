@@ -21,7 +21,7 @@ wheels = [
 
 [[package]]
 name = "gep"
-version = "2024.5"
+version = "2025.1.10"
 source = { virtual = "." }
 dependencies = [
     { name = "prompt-toolkit" },
