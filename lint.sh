@@ -4,8 +4,8 @@
 set -o errexit
 
 help_and_exit() {
-    echo "Usage: $0 [-f|--filter]"
-    echo "  -f,  --filter         format code instead of just checking the format"
+    echo "Usage: $0 [-f|--fix]"
+    echo "  -f,  --fix         Apply fixes instead of just checking"
     exit 1
 }
 
@@ -17,7 +17,7 @@ FIX=0
 
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -f | --format)
+        -f | --fix)
             FIX=1
             shift
             ;;
