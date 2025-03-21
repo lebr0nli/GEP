@@ -46,7 +46,21 @@ git clone --depth 1 https://github.com/lebr0nli/GEP.git ~/.local/share/GEP
 5. Enjoy!
 
 > [!IMPORTANT]
-> After the installation, the script will automatically add `source /path/to/GEP/gdbinit-gep.py` to your `~/.gdbinit` file. Please make sure this line is **always** in your `~/.gdbinit` file during future modifications of your `~/.gdbinit`. Otherwise, you need to manually source it via CLI options (See the [GDB documentation](https://sourceware.org/gdb/onlinedocs/gdb/Initialization-Files.html) for more information).
+> After the installation, the script will automatically add `source /path/to/GEP/gdbinit-gep.py` to your `~/.gdbinit` file if `--skip-gdbinit` is not specified for `install.sh` script.
+> Please make sure this line is **always** in your `~/.gdbinit` file during future modifications of your `~/.gdbinit`. Otherwise, you need to manually source it via CLI options (See the [GDB documentation](https://sourceware.org/gdb/onlinedocs/gdb/Initialization-Files.html) for more information).
+
+<details>
+  <summary>For the users of portable pwndbg</summary>
+
+After you installed pwndbg, you can just run the following command to install GEP:
+
+```shell
+# You could also choose other directories to install GEP if you want
+git clone --depth 1 https://github.com/lebr0nli/GEP.git ~/.local/share/GEP
+~/.local/share/GEP/install.sh --skip-venv
+```
+
+</details>
 
 ## How to update the version of GEP?
 

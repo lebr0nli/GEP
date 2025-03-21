@@ -25,5 +25,4 @@ COPY . /root/.local/share/GEP
 
 WORKDIR /root/.local/share/GEP
 
-RUN ./install.sh -d && \
-    uv sync --group dev
+RUN ./install.sh --dev
