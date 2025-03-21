@@ -46,7 +46,7 @@ git clone --depth 1 https://github.com/lebr0nli/GEP.git ~/.local/share/GEP
 5. Enjoy!
 
 > [!IMPORTANT]
-> After the installation, the script will automatically add `source /path/to/GEP/gdbinit-gep.py` to your `~/.gdbinit` file. Please make sure this line is **always** at the end of your `~/.gdbinit` file during future modifications of your `~/.gdbinit` to avoid some unexpected behaviors.
+> After the installation, the script will automatically add `source /path/to/GEP/gdbinit-gep.py` to your `~/.gdbinit` file. Please make sure this line is **always** in your `~/.gdbinit` file during future modifications of your `~/.gdbinit`. Otherwise, you need to manually source it via CLI options (See the [GDB documentation](https://sourceware.org/gdb/onlinedocs/gdb/Initialization-Files.html) for more information).
 
 ## How to update the version of GEP?
 
