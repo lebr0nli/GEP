@@ -15,6 +15,7 @@ from shutil import which
 from string import ascii_letters
 from subprocess import PIPE
 from subprocess import Popen
+from types import ModuleType
 
 import gdb
 
@@ -88,6 +89,8 @@ FZF_PRVIEW_WINDOW_ARGS = (
     "--preview-window",
     "right:55%:wrap",
 )
+
+REAL_GDB_MODULE = gdb
 
 try:
     from geprc import BINDINGS
@@ -592,17 +595,58 @@ except gdb.error as e: print(e)
             traceback.print_tb(e.__traceback__)
 
 
-def hijack_prompt() -> None:
+def hijack_prompt(original_prompt: T.Callable | None) -> None:
     """
     Hijack the original prompt and use GEP prompt
     """
-    original_prompt = gdb.prompt_hook
 
     def hijacked_prompt(current_prompt: str) -> None:
-        gdb.prompt_hook = original_prompt  # retrieve old prompt hook
+        global REAL_GDB_MODULE
+        global gdb
+        # If gdb.prompt_hook is called by user before first prompt, f_back will not be None
+        # So, we need to call the original prompt_hook instead of gep_prompt
+        if sys._getframe().f_back is not None:
+            result = original_prompt(current_prompt)
+            if (
+                REAL_GDB_MODULE.prompt_hook.__name__ != hijacked_prompt.__name__
+                and REAL_GDB_MODULE.prompt_hook != hijack_prompt
+            ):
+                # prompt_hook is been overridden in user-defined prompt_hook, we need to re-hijack the prompt
+                # We need to compare the name here because the prompt_hook might be re-hijacked by us if the __setattr__ of GdbModuleWrapper is called
+                hijack_prompt(REAL_GDB_MODULE.prompt_hook)
+            return result
+        REAL_GDB_MODULE.prompt_hook = original_prompt  # retrieve old prompt hook
+        sys.modules["gdb"] = gdb = REAL_GDB_MODULE  # we don't need to re-hijack the prompt anymore
         gep_prompt(current_prompt)  # pass the current_prompt to gep_prompt
 
-    gdb.prompt_hook = hijacked_prompt
+    REAL_GDB_MODULE.prompt_hook = hijacked_prompt
+
+
+def hijack_gdb() -> None:
+    """
+    Hijack the original gdb module and replace it with our own to hijack the prompt
+    """
+    global REAL_GDB_MODULE
+    global gdb
+
+    hijack_prompt(REAL_GDB_MODULE.prompt_hook)
+
+    class GdbModuleWrapper(ModuleType):
+        """
+        A wrapper for `gdb` module to make sure we can import GEP at any time
+        """
+
+        def __getattr__(self, name: str) -> T.Any:
+            return getattr(REAL_GDB_MODULE, name)
+
+        def __setattr__(self, name: str, value: T.Any) -> None:
+            if name == "prompt_hook" and gdb != REAL_GDB_MODULE:
+                # Before first prompt_hook, re-hijack the prompt
+                hijack_prompt(value)
+                return
+            setattr(REAL_GDB_MODULE, name, value)
+
+    sys.modules["gdb"] = gdb = GdbModuleWrapper("gdb", getattr(gdb, "__doc__", ""))
 
 
 def main() -> None:
@@ -610,8 +654,8 @@ def main() -> None:
     gep_path = os.path.dirname(os.path.realpath(__file__))
     gdb.execute(f"source {os.path.join(gep_path, 'gdbinit-gep')}")
 
-    # Hijack the prompt of GDB to use our own prompt
-    hijack_prompt()
+    # Hijack the gdb module to use our own prompt
+    hijack_gdb()
 
 
 if __name__ == "__main__":
