@@ -47,6 +47,7 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.formatted_text import ANSI
 from prompt_toolkit.formatted_text import FormattedText
 from prompt_toolkit.history import FileHistory
+from prompt_toolkit.history import History
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.key_binding import KeyPressEvent
 from prompt_toolkit.output import create_output
@@ -488,6 +489,9 @@ class GDBCompleter(Completer):
 
 
 def emulate_prompt_hook(current_prompt: str) -> str:
+    """
+    Emulate the gdb.prompt_hook behavior
+    """
     try:
         # emulate the original prompt
         current_prompt = gdb.prompt_hook(current_prompt) if gdb.prompt_hook else None
@@ -503,6 +507,92 @@ def emulate_prompt_hook(current_prompt: str) -> str:
         if current_prompt is None:
             current_prompt = gdb.parameter("prompt")
     return current_prompt
+
+
+def get_repeat_command(gdb_history: History) -> str:
+    """
+    Get the command to repeat
+    """
+    cmd_list = gdb_history.get_strings()
+    if cmd_list:
+        full_cmd = cmd_list[-1].strip()
+        main_cmd = re.split(r"\W+", full_cmd)[0]
+        if main_cmd.partition("/")[0] == "x":
+            # Handle special case for `x/FMT` command
+            # https://sourceware.org/gdb/current/onlinedocs/gdb.html/Memory.html
+            # > If you use RET to repeat the x command, the repeat count n is used again; the other arguments default as for successive uses of x.
+            return main_cmd
+        elif main_cmd in ("list", "l") and not full_cmd.endswith("-"):
+            # Handle special case for `list` command
+            # https://sourceware.org/gdb/current/onlinedocs/gdb.html/List.html
+            # > Repeating a list command with RET discards the argument, so it is equivalent to typing just list.
+            # > An exception is made for an argument of ‘-’; that argument is preserved in repetition so that each repetition moves up in the source file.
+            return main_cmd
+        elif main_cmd not in DONT_REPEAT:
+            return full_cmd
+    return ""
+
+
+def emulate_prompt(session: PromptSession, current_prompt: str, gdb_history: History) -> None:
+    """
+    Emulate the prompt after executing gdb.prompt_hook
+    """
+    # remove SOH (\001) and STX (\002) for prompt_toolkit
+    full_cmd = session.prompt(ANSI(current_prompt.replace("\001", "").replace("\002", "")))
+    main_cmd = re.split(r"\W+", full_cmd.strip())[0]
+    quit_input_in_multiline_mode = False
+
+    if not full_cmd.strip():
+        full_cmd = get_repeat_command(gdb_history)
+    elif main_cmd in MULTI_LINE_COMMANDS:
+
+        def single_line_py(main_cmd: str, full_cmd: str) -> bool:
+            # If full_cmd is something like: `py print(1)`, we don't need to handle multi-line input
+            return main_cmd in ("py", "python") and full_cmd.strip() not in ("py", "python")
+
+        first_cmd_is_py = main_cmd in ("py", "python")
+
+        if not single_line_py(main_cmd, full_cmd):
+            # TODO: Should we show more info when using `commands` or `define`?
+            # e.g. In native GDB:
+            # (gdb) commands
+            # Type commands for breakpoint(s) 1, one per line.
+            # End with a line saying just "end"
+            # > (input goes here)
+            stack_size = 1
+            while stack_size > 0:
+                full_cmd += "\n"
+                try:
+                    new_line = session.prompt(">".rjust(stack_size))
+                except EOFError:
+                    full_cmd += "end"
+                    stack_size -= 1
+                    continue
+                except KeyboardInterrupt:
+                    quit_input_in_multiline_mode = True
+                    break
+                main_cmd = re.split(r"\W+", new_line.strip())[0]
+                if (
+                    not first_cmd_is_py
+                    and main_cmd in MULTI_LINE_COMMANDS
+                    and not single_line_py(main_cmd, new_line)
+                ):
+                    stack_size += 1
+                elif main_cmd == "end":
+                    stack_size -= 1
+                full_cmd += new_line
+
+    if not quit_input_in_multiline_mode:
+        # This is a hack to fix the issue when debugging the kernel with qemu-system-*
+        # Without this hack, somehow pressing ctrl-c in GDB will not interrupt the kernel
+        # See #23 for more details
+        # TODO: Is there a better way to fix this issue?
+        gdb.execute(
+            f"""python
+try: gdb.execute({full_cmd!r}, from_tty=True)
+except gdb.error as e: print(e)
+"""
+        )
 
 
 def gep_prompt(current_prompt: str) -> None:
@@ -532,66 +622,7 @@ def gep_prompt(current_prompt: str) -> None:
     while True:
         current_prompt = emulate_prompt_hook(current_prompt)
         try:
-            # remove SOH (\001) and STX (\002) for prompt_toolkit
-            full_cmd = session.prompt(ANSI(current_prompt.replace("\001", "").replace("\002", "")))
-            main_cmd = re.split(r"\W+", full_cmd.strip())[0]
-            quit_input_in_multiline_mode = False
-
-            if not full_cmd.strip():
-                cmd_list = gdb_history.get_strings()
-                if cmd_list:
-                    previous_cmd = cmd_list[-1]
-                    if main_cmd not in DONT_REPEAT:
-                        full_cmd = previous_cmd
-            elif main_cmd in MULTI_LINE_COMMANDS:
-
-                def single_line_py(main_cmd: str, full_cmd: str) -> bool:
-                    # If full_cmd is something like: `py print(1)`, we don't need to handle multi-line input
-                    return main_cmd in ("py", "python") and full_cmd.strip() not in ("py", "python")
-
-                first_cmd_is_py = main_cmd in ("py", "python")
-
-                if not single_line_py(main_cmd, full_cmd):
-                    # TODO: Should we show more info when using `commands` or `define`?
-                    # e.g. In native GDB:
-                    # (gdb) commands
-                    # Type commands for breakpoint(s) 1, one per line.
-                    # End with a line saying just "end"
-                    # > (input goes here)
-                    stack_size = 1
-                    while stack_size > 0:
-                        full_cmd += "\n"
-                        try:
-                            new_line = session.prompt(">".rjust(stack_size))
-                        except EOFError:
-                            full_cmd += "end"
-                            stack_size -= 1
-                            continue
-                        except KeyboardInterrupt:
-                            quit_input_in_multiline_mode = True
-                            break
-                        main_cmd = re.split(r"\W+", new_line.strip())[0]
-                        if (
-                            not first_cmd_is_py
-                            and main_cmd in MULTI_LINE_COMMANDS
-                            and not single_line_py(main_cmd, new_line)
-                        ):
-                            stack_size += 1
-                        elif main_cmd == "end":
-                            stack_size -= 1
-                        full_cmd += new_line
-
-            if not quit_input_in_multiline_mode:
-                # This is a hack to fix the issue when debugging the kernel with qemu-system-*
-                # Without this hack, somehow pressing ctrl-c in GDB will not interrupt the kernel
-                # See #23 for more details
-                # TODO: Is there a better way to fix this issue?
-                gdb.execute(
-                    f"""python
-try: gdb.execute({full_cmd!r}, from_tty=True)
-except gdb.error as e: print(e)
-"""
-                )
+            emulate_prompt(session, current_prompt, gdb_history)
         except KeyboardInterrupt:
             pass
         except EOFError:
