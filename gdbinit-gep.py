@@ -3,6 +3,7 @@ from __future__ import annotations
 import atexit
 import os
 import re
+import shlex
 import shutil
 import site
 import sys
@@ -79,8 +80,8 @@ DONT_REPEAT: set[str] = {
     "tmux-setup",
 } | MULTI_LINE_COMMANDS
 
-FZF_RUN_CMD = (
-    "fzf",
+FZF_RUN_OPTS = (
+    "--style=full",
     "--bind=tab:down",
     "--bind=btab:up",
     "--cycle",
@@ -92,7 +93,7 @@ FZF_RUN_CMD = (
     "--layout=reverse",
 )
 
-FZF_PRVIEW_WINDOW_ARGS = (
+FZF_PRVIEW_WINDOW_OPTS = (
     "--preview-window",
     "right:55%:wrap",
 )
@@ -205,9 +206,17 @@ def create_fzf_process(query: str, preview: str = "") -> Popen:
     if query.startswith("!"):
         # ! in the beginning of query means we want to run the command directly for fzf
         query = "^" + query
-    cmd: tuple[str, ...] = FZF_RUN_CMD + ("--query", query)
+    custom_run_opts: str = gdb.parameter("fzf-run-opts")  # type: ignore[assignment]
+    run_opts = tuple(shlex.split(custom_run_opts)) if custom_run_opts else FZF_RUN_OPTS
+    cmd = ("fzf",) + run_opts + ("--query", query)
     if preview:
-        cmd += FZF_PRVIEW_WINDOW_ARGS
+        custom_preview_opts: str = gdb.parameter("fzf-preview-opts")  # type: ignore[assignment]
+        preview_opts = (
+            tuple(shlex.split(custom_preview_opts))
+            if custom_preview_opts
+            else FZF_PRVIEW_WINDOW_OPTS
+        )
+        cmd += preview_opts
         cmd += ("--preview", preview)
     return Popen(cmd, stdin=PIPE, stdout=PIPE, text=True)
 
@@ -414,6 +423,20 @@ single_column_tab_complete = UserParameter(
     True,
     "whether to use single column for tab completion",
     gdb.PARAM_BOOLEAN,
+)
+
+UserParameter(
+    "fzf-run-opts",
+    "",
+    "additional options for fzf (used in tab completion or history search)",
+    gdb.PARAM_STRING_NOESCAPE,
+)
+
+UserParameter(
+    "fzf-preview-opts",
+    "",
+    "additional options for fzf preview window (used in tab completion)",
+    gdb.PARAM_STRING_NOESCAPE,
 )
 
 if HAS_FZF:

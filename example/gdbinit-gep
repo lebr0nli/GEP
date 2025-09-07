@@ -14,3 +14,9 @@ set history remove-duplicates unlimited
 # Set whether to use single column for tab completion (when fzf is not available)
 # defulat: on
 # set single-column-tab-complete off
+
+# Set additional options for fzf (used in tab completion or history search).
+# set fzf-run-opts --style=full --bind=tab:down --bind=btab:up --cycle --select-1 --exit-0 --tiebreak=index --no-multi --height=40% --layout=reverse
+
+# Set additional options for fzf preview window (used in tab completion).
+# set fzf-preview-opts --preview-window right:55%:wrap
