@@ -1,6 +1,5 @@
-#!/bin/bash
-
-set -o errexit
+#!/bin/sh
+set -eu
 
 help_and_exit() {
     echo "Usage: $0 [-d|--dev]"
@@ -16,45 +15,42 @@ DEV=0
 SKIP_VENV=0
 SKIP_GDBINIT=0
 
-while [[ $# -gt 0 ]]; do
+while [ $# -gt 0 ]; do
     case $1 in
         -d | --dev)
             DEV=1
-            shift
             ;;
         --skip-venv)
             SKIP_VENV=1
-            shift
             ;;
         --skip-gdbinit)
             SKIP_GDBINIT=1
-            shift
             ;;
         *)
             echo "Unknown option: $1"
             help_and_exit
             ;;
     esac
+    shift
 done
 
-cd "$(dirname "${BASH_SOURCE[0]}")"
+cd "$(dirname "$0")"
 GEP_BASE=$(pwd)
 GDBINIT_GEP_PY=$GEP_BASE/gdbinit-gep.py
 echo "GEP installation path: $GEP_BASE"
 
-if [[ $DEV == 1 ]]; then
+if [ "$DEV" -eq 1 ]; then
     uv sync --group dev
 else
-    if [[ $SKIP_VENV == 1 ]]; then
+    if [ "$SKIP_VENV" -eq 1 ]; then
         echo "Skipping virtualenv creation"
     else
         # find python path
         PYVER=$(gdb -batch -q --nx -ex 'pi import platform; print(".".join(platform.python_version_tuple()[:2]))')
         PYTHON=$(gdb -batch -q --nx -ex 'pi import sys; print(sys.executable)')
         if ! uname -a | grep -q Darwin > /dev/null; then
-            PYTHON+="${PYVER}"
+            PYTHON="${PYTHON}${PYVER}"
         fi
-        # create venv and install prompt_toolkit
         VENV_PATH=$GEP_BASE/.venv
         echo "Creating virtualenv in path: ${VENV_PATH}"
         "$PYTHON" -m venv "$VENV_PATH"
@@ -65,22 +61,25 @@ else
     fi
 fi
 
-# copy example config to GEP_BASE if not exists
 echo "Copying default config to $GEP_BASE if not exists"
-# Note: macOS will return 1 if the file already exists
-cp -n "$GEP_BASE"/example/* "$GEP_BASE" || true
+for file in "$GEP_BASE"/example/*; do
+    [ -f "$file" ] && cp -n "$file" "$GEP_BASE"
+done
 
-# append GEP to gdbinit if not exists
-if [[ $SKIP_GDBINIT == 1 ]]; then
+if [ "$SKIP_GDBINIT" -eq 1 ]; then
     echo "Skipping gdbinit setup"
 else
-    if ! grep -q '^[^#]*source.*/gdbinit-gep.py' ~/.gdbinit; then
+    if [ -f "$HOME/.gdbinit" ] && grep -q '^[^#]*source.*/gdbinit-gep.py' "$HOME/.gdbinit"; then
+        :
+    else
         echo "Appending GEP to ~/.gdbinit"
-        printf '\n# Comment out the following line to disable GEP\n' >> ~/.gdbinit
-        printf 'source %s\n' "$GDBINIT_GEP_PY" >> ~/.gdbinit
+        {
+            echo
+            echo "# Comment out the following line to disable GEP"
+            echo "source $GDBINIT_GEP_PY"
+        } >> "$HOME/.gdbinit"
     fi
 fi
 
 echo "Installation complete!"
-
 exit 0
