@@ -30,7 +30,7 @@ And also, GEP has some awesome features already, you can directly use it!
 
 ## How to install it?
 
-Make sure you have GDB 8.0+ (ideally GDB 14.1+ for the best experience) and compiled with Python3.8+ bindings, then:
+Make sure you have GDB 12.1+ (ideally GDB 14.1+ for the best experience) and compiled with Python3.10+ bindings, then:
 
 1. Install git
 2. Make sure you have [virtualenv](https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/#installing-virtualenv) installed
