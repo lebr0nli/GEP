@@ -1,10 +1,6 @@
 version = 1
 revision = 2
-requires-python = ">=3.8, <4.0"
-resolution-markers = [
-    "python_full_version >= '3.9'",
-    "python_full_version < '3.9'",
-]
+requires-python = ">=3.10, <4.0"
 
 [[package]]
 name = "colorama"
@@ -49,7 +45,7 @@ dev = [
     { name = "pytest", specifier = "==8.2.0" },
     { name = "ruff", specifier = "==0.8.6" },
     { name = "ty", specifier = "==0.0.8" },
-    { name = "types-gdb", specifier = "==15.0.0.20241204" },
+    { name = "types-gdb", specifier = ">=16.3.0.20250920" },
     { name = "vermin", specifier = "==1.8.0" },
 ]
 
@@ -200,11 +196,11 @@ wheels = [
 
 [[package]]
 name = "types-gdb"
-version = "15.0.0.20241204"
+version = "16.3.0.20250920"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/89/d7/1214e7cfb3c412e0523ee0d760413ae48698c37381ef2e2c4887922127e2/types_gdb-15.0.0.20241204.tar.gz", hash = "sha256:2b38773f5795b7e47114aec303bebd7a75918e41a764743ff490ce9649db5a55", size = 19947, upload_time = "2024-12-04T02:57:21.541Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/9c/f1fbeedd534f7228c04cfb11281a47a1f4338238d27635199958c247b0e5/types_gdb-16.3.0.20250920.tar.gz", hash = "sha256:4c16cd289428ff6c0cb2fac26e1913d5eab2d890da9951091a11133d5d0a589c", size = 25335, upload_time = "2025-09-20T02:45:11.072Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/a6/78cc60329bce2058b4ba32bc9afc2356d70ff6b53a408f333f93b60af853/types_gdb-15.0.0.20241204-py3-none-any.whl", hash = "sha256:a1b416f0361b48149f8a189f03a7325a91447cd6edc3f1a7c8666510fdd8b350", size = 23781, upload_time = "2024-12-04T02:57:20.042Z" },
+    { url = "https://files.pythonhosted.org/packages/a8/a5/e0246aece6b052e4b8251fbb0c80f490b6b7bae9a9c3d92978d04dfc930d/types_gdb-16.3.0.20250920-py3-none-any.whl", hash = "sha256:10873fd469cdccb0b7e5ad2321eeb751cb6676cb05a67f3589e753d5f4482ae7", size = 31308, upload_time = "2025-09-20T02:45:10.034Z" },
 ]
 
 [[package]]
