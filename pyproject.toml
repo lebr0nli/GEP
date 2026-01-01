@@ -13,10 +13,10 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "ruff<1.0.0,>=0.4.4",
-    "mypy<2.0.0,>=1.10.0",
-    "types-gdb<13.0.0.0,>=12.1.4.20240408",
-    "vermin<2.0.0,>=1.6.0",
+    "ruff==0.8.6",
+    "ty==0.0.8",
+    "types-gdb==15.0.0.20241204",
+    "vermin==1.8.0",
     "pytest==8.2.0",
 ]
 
@@ -52,19 +52,9 @@ ignore = [
 known-third-party = ["gdb", "prompt_toolkit"]
 force-single-line = true
 
-[tool.mypy]
-files = ["gdbinit-gep.py", "example/geprc.py"]
-strict_optional = false
-check_untyped_defs = true
-allow_redefinition = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-show_error_context = true
-pretty = true
-show_error_codes = true
+[tool.ty.src]
+include = ["gdbinit-gep.py", "example/geprc.py"]
 
-disable_error_code = [
-    # https://github.com/python/mypy/issues/6232
-    "assignment"
-]
+[tool.ty.rules]
+redundant-cast = "warn"
+unused-ignore-comment = "warn"
