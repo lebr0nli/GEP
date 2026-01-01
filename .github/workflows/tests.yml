@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        images: [ubuntu24.04, ubuntu22.04, ubuntu20.04, arch]
+        images: [ubuntu24.04, ubuntu22.04, arch]
         runner: [ubuntu-24.04, ubuntu-24.04-arm]
         exclude:
           - images: arch
