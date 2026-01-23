@@ -303,7 +303,7 @@ def create_fzf_process(
         )
         cmd += preview_opts
         cmd += ("--preview", preview)
-    return Popen(cmd, stdin=PIPE, stdout=PIPE, text=True)
+    return Popen(cmd, stdin=PIPE, stdout=PIPE, text=True, encoding="utf-8")
 
 
 def create_preview_fifos() -> tuple[str, str]:
@@ -1064,6 +1064,13 @@ def hijack_gdb() -> None:
 
 
 def main() -> None:
+    # Force utf-8 encoding for stdin/stdout/stderr if possible
+    if hasattr(sys.__stdin__, "reconfigure"):
+        sys.__stdin__.reconfigure(encoding="utf-8")
+    if hasattr(sys.__stdout__, "reconfigure"):
+        sys.__stdout__.reconfigure(encoding="utf-8")
+    if hasattr(sys.__stderr__, "reconfigure"):
+        sys.__stderr__.reconfigure(encoding="utf-8")
     # source the gdbinit-gep config in the same directory
     gep_path = os.path.dirname(os.path.realpath(__file__))
     gdb.execute(f"source {os.path.join(gep_path, 'gdbinit-gep')}")
