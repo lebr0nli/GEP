@@ -89,18 +89,60 @@ DONT_REPEAT: set[str] = {
     "tmux-setup",
 } | MULTI_LINE_COMMANDS
 
-FZF_RUN_OPTS = (
+FZF_BASE_OPTS = (
     "--style=full",
     "--bind=tab:down",
     "--bind=btab:up",
     "--cycle",
-    "--select-1",
     "--exit-0",
     "--tiebreak=index",
     "--no-multi",
     "--height=40%",
     "--layout=reverse",
 )
+
+FZF_RUN_OPTS = FZF_BASE_OPTS + ("--select-1",)
+
+# Circle symbols for breakpoint status
+CIRCLE_ENABLED = "\u25cf"  # ● Filled circle
+CIRCLE_DISABLED = "\u25cb"  # ○ Empty circle
+
+
+# ANSI color helper functions
+def ansi_reset(text: str) -> str:
+    """Wrap text with ANSI reset code."""
+    return f"\033[0m{text}\033[0m"
+
+
+def ansi_bold(text: str) -> str:
+    """Wrap text with ANSI bold code."""
+    return f"\033[1m{text}\033[0m"
+
+
+def ansi_gray(text: str) -> str:
+    """Wrap text with ANSI gray/dark color code."""
+    return f"\033[90m{text}\033[0m"
+
+
+def ansi_red(text: str) -> str:
+    """Wrap text with ANSI red color code."""
+    return f"\033[91m{text}\033[0m"
+
+
+def ansi_green(text: str) -> str:
+    """Wrap text with ANSI green color code."""
+    return f"\033[92m{text}\033[0m"
+
+
+def ansi_yellow(text: str) -> str:
+    """Wrap text with ANSI yellow color code."""
+    return f"\033[93m{text}\033[0m"
+
+
+def ansi_blue(text: str) -> str:
+    """Wrap text with ANSI blue color code."""
+    return f"\033[94m{text}\033[0m"
+
 
 FZF_PRVIEW_WINDOW_OPTS = (
     "--preview-window",
@@ -223,9 +265,21 @@ def get_gdb_completion_and_status(query: str) -> tuple[list[str], bool]:
     return all_completions, should_get_all_help_docs
 
 
-def create_fzf_process(query: str, preview: str | None = "") -> Popen:
+def create_fzf_process(
+    query: str,
+    preview: str | None = "",
+    *,
+    use_select_1: bool = True,
+    extra_opts: tuple[str, ...] = (),
+) -> Popen:
     """
     Create a fzf process with given query and preview command.
+
+    Args:
+        query: The initial query string for fzf.
+        preview: The preview command. If None or empty, no preview is shown.
+        use_select_1: If True, use --select-1 to auto-select when only one match.
+        extra_opts: Additional fzf options to append to the command.
     """
     if not HAS_FZF:
         raise ValueError("fzf is not installed")
@@ -233,8 +287,13 @@ def create_fzf_process(query: str, preview: str | None = "") -> Popen:
         # ! in the beginning of query means we want to run the command directly for fzf
         query = "^" + query
     custom_run_opts: str = gdb.parameter("fzf-run-opts")  # type: ignore[assignment]
-    run_opts = tuple(shlex.split(custom_run_opts)) if custom_run_opts else FZF_RUN_OPTS
-    cmd = ("fzf",) + run_opts + ("--query", query)
+    if custom_run_opts:
+        run_opts = tuple(shlex.split(custom_run_opts))
+    elif use_select_1:
+        run_opts = FZF_RUN_OPTS
+    else:
+        run_opts = FZF_BASE_OPTS
+    cmd = ("fzf",) + run_opts + extra_opts + ("--query", query)
     if preview:
         custom_preview_opts: str = gdb.parameter("fzf-preview-opts")  # type: ignore[assignment]
         preview_opts = (
@@ -411,6 +470,274 @@ class FzfTabCompletePreviewThread(threading.Thread):
         self.join()
 
 
+class BreakpointInfo:
+    """Structured information about a GDB breakpoint."""
+
+    __slots__ = (
+        "number",
+        "enabled",
+        "location",
+        "bp_type",
+        "temporary",
+        "hit_count",
+        "condition",
+        "expression",
+        "pending",
+        "what",
+    )
+
+    def __init__(self, bp: gdb.Breakpoint) -> None:
+        self.number: int = bp.number
+        self.enabled: bool = bp.enabled
+        self.location: str | None = bp.location
+        self.bp_type: int = bp.type
+        self.temporary: bool = bp.temporary
+        self.hit_count: int = bp.hit_count
+        self.condition: str | None = bp.condition
+        self.expression: str | None = bp.expression
+        self.pending: bool = bp.pending
+        self.what: str | None = self._fetch_catchpoint_what() if self.location is None else None
+
+    def _fetch_catchpoint_what(self) -> str | None:
+        """Fetch the 'what' field for catchpoints from 'info breakpoint'."""
+        try:
+            output = gdb.execute(f"info breakpoint {self.number}", to_string=True)
+            for line in output.splitlines():
+                if not line or not line[0].isdigit():
+                    continue
+                fields = line.split()
+                if len(fields) >= 5 and fields[1] == "catchpoint":
+                    # Extract what: take content before the first comma (handling quoted strings)
+                    what_part = " ".join(fields[4:])
+                    # Find first comma not inside quotes
+                    in_quotes = False
+                    for i, c in enumerate(what_part):
+                        if c == '"':
+                            in_quotes = not in_quotes
+                        elif c == "," and not in_quotes:
+                            return what_part[:i].strip()
+                    return what_part.strip()
+        except gdb.error:
+            pass
+        return None
+
+    @property
+    def display_location(self) -> str:
+        """Get the display location (location, expression, or what)."""
+        return self.location or self.expression or self.what or "<unknown>"
+
+    @property
+    def bp_type_name(self) -> str:
+        """Get the human-readable name for the breakpoint type."""
+        type_names = {
+            gdb.BP_BREAKPOINT: "breakpoint",
+            gdb.BP_WATCHPOINT: "watchpoint",
+            gdb.BP_HARDWARE_WATCHPOINT: "hardware watchpoint",
+            gdb.BP_READ_WATCHPOINT: "read watchpoint",
+            gdb.BP_ACCESS_WATCHPOINT: "access watchpoint",
+            gdb.BP_CATCHPOINT: "catchpoint",
+        }
+        return type_names.get(self.bp_type, "unknown")
+
+
+def format_breakpoint_for_fzf(bp: gdb.Breakpoint) -> str:
+    """
+    Format a breakpoint for fzf display.
+
+    Format: CIRCLE [NUM] DISPLAY_LOCATION
+    """
+    circle = ansi_red(CIRCLE_ENABLED) if bp.enabled else ansi_gray(CIRCLE_DISABLED)
+    info = BreakpointInfo(bp)
+    return f"{circle} [{bp.number}] {info.display_location}"
+
+
+def get_breakpoint_preview(bp_num: int) -> str:
+    """
+    Get a colorized preview string for a breakpoint.
+
+    Args:
+        bp_num: The breakpoint number.
+
+    Returns:
+        A colorized string with detailed breakpoint information.
+    """
+    breakpoints = gdb.breakpoints() or []
+    for bp in breakpoints:
+        if bp.number == bp_num:
+            info = BreakpointInfo(bp)
+            lines = []
+            status = ansi_green("Enabled") if info.enabled else ansi_red("Disabled")
+            header = ansi_bold(f"Breakpoint {info.number}")
+            lines.append(f"{header}: {status}")
+            lines.append("")
+            if info.location:
+                lines.append(f"{ansi_blue('Location:')} {info.location}")
+            if info.expression:
+                lines.append(f"{ansi_blue('Expression:')} {info.expression}")
+            if info.what:
+                lines.append(f"{ansi_blue('What:')} {info.what}")
+            if info.condition:
+                lines.append(f"{ansi_blue('Condition:')} {info.condition}")
+            lines.append(f"{ansi_blue('Hit count:')} {info.hit_count}")
+            if info.temporary:
+                lines.append(f"{ansi_yellow('Temporary:')} Yes")
+            if info.pending:
+                lines.append(f"{ansi_yellow('Pending:')} Yes")
+            lines.append(f"{ansi_blue('Type:')} {info.bp_type_name}")
+            return "\n".join(lines)
+    return "Breakpoint not found"
+
+
+class FzfBreakpointPreviewThread(threading.Thread):
+    """
+    A thread for previewing breakpoint details with fzf.
+    """
+
+    def __init__(self, fifo_input_path: str, fifo_output_path: str, **kwargs: T.Any) -> None:
+        super().__init__(**kwargs)
+        self.fifo_input_path = fifo_input_path
+        self.fifo_output_path = fifo_output_path
+        self.is_done = threading.Event()
+
+    def run(self) -> None:
+        while not self.is_done.is_set():
+            with open(self.fifo_input_path, encoding="utf-8") as fifo_input:
+                while not self.is_done.is_set():
+                    data = fifo_input.read()
+                    if len(data) == 0:
+                        break
+                    with open(self.fifo_output_path, "w", encoding="utf-8") as fifo_output:
+                        bp_num = parse_bp_number_from_fzf_output(data)
+                        if bp_num is not None:
+                            preview = get_breakpoint_preview(bp_num)
+                            fifo_output.write(preview)
+
+    def stop(self) -> None:
+        self.is_done.set()
+        with open(self.fifo_input_path, "w", encoding="utf-8") as f:
+            f.close()
+        self.join()
+
+
+def parse_bp_number_from_fzf_output(output: str) -> int | None:
+    """
+    Parse breakpoint number from fzf output.
+
+    Expected format: "CIRCLE [NUM] DISPLAY_LOCATION"
+    """
+    start = output.find("[")
+    if start == -1:
+        return None
+    end = output.find("]", start + 1)
+    if end == -1:
+        return None
+    num_part = output[start + 1 : end]
+    if num_part.isdigit():
+        return int(num_part)
+    return None
+
+
+def fzf_toggle_breakpoint(event: KeyPressEvent) -> None:
+    """Toggle the enabled/disabled status of a breakpoint using fzf."""
+
+    def _fzf_toggle_breakpoint() -> None:
+        breakpoints = gdb.breakpoints() or []
+        if not breakpoints:
+            print_warning("No breakpoints set.")
+            return
+
+        # Show prompt while running fzf
+        event.app.renderer.render(event.app, event.app.layout, is_done=True)
+
+        # Create FIFOs for preview
+        fifo_input, fifo_output = create_preview_fifos()
+        preview_cmd = f"echo {{}} > {fifo_input}\ncat {fifo_output}"
+
+        # Use --nth to restrict search to NUM and LOCATION fields (skip circle)
+        p = create_fzf_process(
+            "",
+            preview_cmd,
+            use_select_1=False,
+            extra_opts=("--ansi", "--nth=2.."),
+        )
+
+        for bp in breakpoints:
+            if bp.number < 0:
+                continue
+            line = format_breakpoint_for_fzf(bp)
+            p.stdin.write(line + "\n")  # ty: ignore[possibly-missing-attribute]
+
+        t = FzfBreakpointPreviewThread(fifo_input, fifo_output)
+        t.start()
+        stdout, _ = p.communicate()
+        t.stop()
+
+        if stdout:
+            bp_num = parse_bp_number_from_fzf_output(stdout.strip())
+            if bp_num is not None:
+                for bp in gdb.breakpoints() or []:
+                    if bp.number == bp_num:
+                        new_state = not bp.enabled
+                        bp.enabled = new_state
+                        state_str = "enabled" if new_state else "disabled"
+                        print_info(f"Breakpoint {bp_num} {state_str}.")
+                        break
+
+        # Remove the prompt we showed after running fzf
+        event.app.output.cursor_up(T.cast(str, gdb.parameter("prompt")).count("\n") + 1)
+        event.app.renderer.erase()
+
+    run_in_terminal(_fzf_toggle_breakpoint)
+
+
+def fzf_delete_breakpoint(event: KeyPressEvent) -> None:
+    """Delete a breakpoint using fzf."""
+
+    def _fzf_delete_breakpoint() -> None:
+        breakpoints = gdb.breakpoints() or []
+        if not breakpoints:
+            print_warning("No breakpoints set.")
+            return
+
+        # Show prompt while running fzf
+        event.app.renderer.render(event.app, event.app.layout, is_done=True)
+
+        # Create FIFOs for preview
+        fifo_input, fifo_output = create_preview_fifos()
+        preview_cmd = f"echo {{}} > {fifo_input}\ncat {fifo_output}"
+
+        # Use --nth to restrict search to NUM and LOCATION fields (skip circle)
+        p = create_fzf_process(
+            "",
+            preview_cmd,
+            use_select_1=False,
+            extra_opts=("--ansi", "--nth=2.."),
+        )
+
+        for bp in breakpoints:
+            if bp.number < 0:
+                continue
+            line = format_breakpoint_for_fzf(bp)
+            p.stdin.write(line + "\n")  # ty: ignore[possibly-missing-attribute]
+
+        t = FzfBreakpointPreviewThread(fifo_input, fifo_output)
+        t.start()
+        stdout, _ = p.communicate()
+        t.stop()
+
+        if stdout:
+            bp_num = parse_bp_number_from_fzf_output(stdout.strip())
+            if bp_num is not None:
+                gdb.execute(f"delete {bp_num}")
+                print_info(f"Breakpoint {bp_num} deleted.")
+
+        # Remove the prompt we showed after running fzf
+        event.app.output.cursor_up(T.cast(str, gdb.parameter("prompt")).count("\n") + 1)
+        event.app.renderer.erase()
+
+    run_in_terminal(_fzf_delete_breakpoint)
+
+
 class UserParameter(gdb.Parameter):
     gep_loaded = False
 
@@ -476,6 +803,14 @@ if HAS_FZF:
     FIFO_INPUT_PATH, FIFO_OUTPUT_PATH = create_preview_fifos()
     FZF_PRVIEW_CMD = f"echo {{n}} > {FIFO_INPUT_PATH}\ncat {FIFO_OUTPUT_PATH}"
     BINDINGS.add("c-i")(fzf_tab_autocomplete)
+    # key binding for fzf breakpoint toggle (Alt-t / Option-t)
+    # Also bind \u2020 (†) for macOS terminals where Option sends special characters
+    BINDINGS.add("escape", "t")(fzf_toggle_breakpoint)
+    BINDINGS.add("\u2020")(fzf_toggle_breakpoint)
+    # key binding for fzf breakpoint delete (Alt-x / Option-x)
+    # Also bind \u2248 (≈) for macOS terminals where Option sends special characters
+    BINDINGS.add("escape", "x")(fzf_delete_breakpoint)
+    BINDINGS.add("\u2248")(fzf_delete_breakpoint)
 else:
     print_warning("Install fzf for better experience with GEP")
 
