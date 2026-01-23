@@ -269,7 +269,7 @@ def create_fzf_process(
     query: str,
     preview: str | None = "",
     *,
-    use_select_1: bool = True,
+    use_select_1: bool = False,
     extra_opts: tuple[str, ...] = (),
 ) -> Popen:
     """
@@ -385,7 +385,9 @@ def fzf_tab_autocomplete(event: KeyPressEvent) -> None:
             completion_idx = len(prefix) - len(query)
         else:
             completion_idx = 0
-        p = create_fzf_process(query, FZF_PRVIEW_CMD if should_get_all_help_docs else None)
+        p = create_fzf_process(
+            query, FZF_PRVIEW_CMD if should_get_all_help_docs else None, use_select_1=True
+        )
         completion_help_docs = {}
         for i, completion in enumerate(all_completions):
             if prefix.endswith("'" + query) and not completion.endswith("'"):
