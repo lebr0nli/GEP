@@ -1,48 +1,71 @@
 from conftest import GDBSession
 
-# TODO: Maybe a better way to handle this?
 FZF_POINTER = b"\xe2\x96\x8c"  # ▌
 
 
-def test_fzf_history_search(gdb_session: GDBSession) -> None:
+def test_fzf_history_shows_all_entries(gdb_session: GDBSession) -> None:
     gdb_session.start(histories=["print 10", "print 11", "print 20"])
-
-    # search with empty buffer
     gdb_session.send_key("C-r")
     pane_content = gdb_session.capture_pane()
     assert b"3/3" in pane_content
-    b"""\
-> print 20
-  print 11
-  print 10""" in pane_content
+    assert b"print 20" in pane_content
+    assert b"print 11" in pane_content
+    assert b"print 10" in pane_content
 
-    # search "11" in buffer
+
+def test_fzf_history_filters_by_query(gdb_session: GDBSession) -> None:
+    gdb_session.start(histories=["print 10", "print 11", "print 20"])
+    gdb_session.send_key("C-r")
     gdb_session.send_literal("11")
     pane_content = gdb_session.capture_pane()
     assert b"> 11" in pane_content
     assert b"1/3" in pane_content
     assert FZF_POINTER + b" print 11" in pane_content
 
-    # the selected history should be replaced in buffer
+
+def test_fzf_history_select_replaces_buffer(gdb_session: GDBSession) -> None:
+    gdb_session.start(histories=["print 10", "print 11", "print 20"])
+    gdb_session.send_key("C-r")
+    gdb_session.send_literal("11")
     gdb_session.send_key("Enter")
     assert b"(gdb) print 11" == gdb_session.capture_pane()
 
-    # clear the buffer
-    gdb_session.send_key("C-u")
-    assert b"(gdb)" == gdb_session.capture_pane()
 
-    # search with "print " in buffer
+def test_fzf_history_cancel_restores_buffer(gdb_session: GDBSession) -> None:
+    gdb_session.start(histories=["print 10", "print 11", "print 20"])
     gdb_session.send_literal("print ")
-    original_pane = gdb_session.capture_pane(
-        with_color=True
-    )  # use color to make sure it is exactly the same
+    original_pane = gdb_session.capture_pane(with_color=True)
     gdb_session.send_key("C-r")
     assert b"3/3" in gdb_session.capture_pane()
-
-    # put some garbage in buffer
     gdb_session.send_literal("garbage")
     assert b"0/3" in gdb_session.capture_pane()
-
-    # check if we cancel the search, it will restore the buffer
     gdb_session.send_key("C-c")
     assert original_pane == gdb_session.capture_pane(with_color=True)
+
+
+def test_fzf_history_navigate_with_tab(gdb_session: GDBSession) -> None:
+    gdb_session.start(histories=["print 10", "print 11", "print 20"])
+    gdb_session.send_key("C-r")
+    gdb_session.send_key("Tab")
+    pane_content = gdb_session.capture_pane()
+    assert FZF_POINTER + b" print 11" in pane_content
+    gdb_session.send_key("Enter")
+    assert b"(gdb) print 11" == gdb_session.capture_pane()
+
+
+def test_fzf_history_special_characters(gdb_session: GDBSession) -> None:
+    gdb_session.start(histories=["x/10gx $rsp", "p $rax", "x/4wx $rbp"])
+    gdb_session.send_key("C-r")
+    gdb_session.send_literal("rsp")
+    pane_content = gdb_session.capture_pane()
+    assert b"1/3" in pane_content
+    gdb_session.send_key("Enter")
+    assert b"(gdb) x/10gx $rsp" == gdb_session.capture_pane()
+
+
+def test_fzf_history_escape_cancels(gdb_session: GDBSession) -> None:
+    gdb_session.start(histories=["print 10", "print 11"])
+    gdb_session.send_key("C-r")
+    assert b"2/2" in gdb_session.capture_pane()
+    gdb_session.send_key("Escape")
+    assert b"(gdb)" == gdb_session.capture_pane()
