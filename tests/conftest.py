@@ -6,12 +6,15 @@ import subprocess
 import tempfile
 import time
 import typing as T
+from pathlib import Path
 
 import pytest
 
 SESSION_STARTUP_TIMEOUT = 15
 STARTUP_BANNER = b"GEP is running now!"
 GDB_HISTORY_NAME = ".gdb_history"
+GDBINIT_NAME = "gdbinit"
+GDBINIT_GEP_PY_PATH = Path(__file__).parent.parent / "gdbinit-gep.py"
 TIME_INTERVAL = 1
 
 
@@ -36,7 +39,10 @@ class GDBSession:
         """
         Initialize the GDB session.
         """
-        self.tmpdir = tempfile.TemporaryDirectory()
+        self.tmpdir = tempfile.TemporaryDirectory(prefix="gep_test_")
+        with (Path(self.tmpdir.name) / GDBINIT_NAME).open("w") as f:
+            f.write("set pagination off\n")
+            f.write(f"source {GDBINIT_GEP_PY_PATH.resolve()}\n")
 
         self.session_name = None
         self.__session_started = False
@@ -49,9 +55,11 @@ class GDBSession:
         :param list[str] histories: The histories to load into GDB.
         :return: None
         """
+        history_path = Path(self.tmpdir.name) / GDB_HISTORY_NAME
         if histories:
-            with open(os.path.join(self.tmpdir.name, GDB_HISTORY_NAME), "w") as f:
+            with history_path.open("w") as f:
                 f.write("\n".join(histories))
+        gdbinit_path = Path(self.tmpdir.name) / GDBINIT_NAME
 
         cmd = [
             "tmux",
@@ -66,6 +74,9 @@ class GDBSession:
             self.tmpdir.name,
             "gdb",
             "-q",
+            "--nx",
+            "-ix",
+            str(gdbinit_path.resolve()),
         ]
         if gdb_args:
             cmd.extend(gdb_args)
