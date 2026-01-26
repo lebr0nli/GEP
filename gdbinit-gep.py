@@ -5,9 +5,11 @@ import os
 import re
 import shlex
 import shutil
+import signal
 import site
 import sys
 import tempfile
+import termios
 import threading
 import traceback
 import typing as T
@@ -36,6 +38,13 @@ else:
     except ImportError:
         print("Failed to find prompt_toolkit and venv is not found")
         sys.exit(1)
+
+
+ORIGINAL_TERMINAL_STATE: list[T.Any] | None = None
+try:
+    ORIGINAL_TERMINAL_STATE = termios.tcgetattr(sys.stdin.fileno())
+except Exception:
+    pass
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit import print_formatted_text
@@ -109,6 +118,23 @@ except ImportError:
     from prompt_toolkit.key_binding import KeyBindings
 
     BINDINGS = KeyBindings()
+
+
+def handle_sigterm(signum: int, frame: T.Any) -> None:
+    """
+    When reading input with Python API, GDB somehow handle SIGTERM weirdly.
+    This is a workaround to make sure `pkill gdb` can terminate GDB properly.
+    """
+    if ORIGINAL_TERMINAL_STATE is not None:
+        # Restore the original terminal state to avoid terminal messed up
+        try:
+            termios.tcsetattr(sys.stdin.fileno(), termios.TCSAFLUSH, ORIGINAL_TERMINAL_STATE)
+        except Exception:
+            pass
+    gdb.execute("quit", to_string=True)
+
+
+signal.signal(signal.SIGTERM, handle_sigterm)
 
 
 # function for logging
