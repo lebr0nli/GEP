@@ -27,8 +27,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-set -o xtrace
-
 cd "$(dirname "${BASH_SOURCE[0]}")"
 GEP_BASE=$(pwd)
 # shellcheck disable=SC1091
@@ -44,22 +42,30 @@ LINT_SHELL_FILES=(
     "lint.sh"
 )
 
-if [[ $FIX == 1 ]]; then
-    ruff check --fix
-    ruff format
-else
-    ruff check
-    ruff format --diff
-fi
-
-ty check
+run() {
+    echo "+ $*"
+    if ! "$@"; then
+        echo "FAILED: $*" >&2
+        exit 1
+    fi
+}
 
 if [[ $FIX == 1 ]]; then
-    shfmt -i 4 -bn -ci -sr -w "${LINT_SHELL_FILES[@]}"
+    run ruff check --fix
+    run ruff format
 else
-    shfmt -i 4 -bn -ci -sr -d "${LINT_SHELL_FILES[@]}"
+    run ruff check
+    run ruff format --diff
 fi
 
-shellcheck "${LINT_SHELL_FILES[@]}"
+run ty check
 
-vermin -vvv --no-tips -q -t=3.10- --violations "${VERMIN_TARGETS[@]}"
+if [[ $FIX == 1 ]]; then
+    run shfmt -i 4 -bn -ci -sr -w "${LINT_SHELL_FILES[@]}"
+else
+    run shfmt -i 4 -bn -ci -sr -d "${LINT_SHELL_FILES[@]}"
+fi
+
+run shellcheck "${LINT_SHELL_FILES[@]}"
+
+run vermin -vvv --no-tips -q -t=3.10- --violations "${VERMIN_TARGETS[@]}"
