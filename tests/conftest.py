@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 import os
+import signal
 import subprocess
 import tempfile
 import time
@@ -104,7 +105,20 @@ class GDBSession:
         """
         self.tmpdir.cleanup()
         if self.__session_started:
-            run_with_screen_256color(["tmux", "kill-session", "-t", self.session_name])
+            pid = subprocess.check_output(
+                [
+                    "tmux",
+                    "list-panes",
+                    "-t",
+                    self.session_name,
+                    "-F",
+                    "#{pane_pid}",
+                ],
+                text=True,
+            ).strip()
+            if pid:
+                os.kill(int(pid), signal.SIGTERM)
+            subprocess.run(["tmux", "kill-session", "-t", self.session_name])
             self.__session_started = False
 
     def check_session_started(func: T.Callable) -> T.Callable:
