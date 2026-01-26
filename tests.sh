@@ -11,8 +11,6 @@ if [[ $# -gt 0 ]]; then
     help_and_exit
 fi
 
-set -o xtrace
-
 cd "$(dirname "${BASH_SOURCE[0]}")"
 GEP_BASE=$(pwd)
 # shellcheck disable=SC1091
