@@ -1,6 +1,5 @@
+from conftest import Fzf
 from conftest import GDBSession
-
-FZF_POINTER = b"\xe2\x96\x8c"  # ▌
 
 
 def test_fzf_history_shows_all_entries(gdb_session: GDBSession) -> None:
@@ -20,7 +19,7 @@ def test_fzf_history_filters_by_query(gdb_session: GDBSession) -> None:
     pane_content = gdb_session.capture_pane()
     assert b"> 11" in pane_content
     assert b"1/3" in pane_content
-    assert FZF_POINTER + b" print 11" in pane_content
+    assert Fzf.POINTER + b" print 11" in pane_content
 
 
 def test_fzf_history_select_replaces_buffer(gdb_session: GDBSession) -> None:
@@ -48,7 +47,7 @@ def test_fzf_history_navigate_with_tab(gdb_session: GDBSession) -> None:
     gdb_session.send_key("C-r")
     gdb_session.send_key("Tab")
     pane_content = gdb_session.capture_pane()
-    assert FZF_POINTER + b" print 11" in pane_content
+    assert Fzf.POINTER + b" print 11" in pane_content
     gdb_session.send_key("Enter")
     assert b"(gdb) print 11" == gdb_session.capture_pane()
 
