@@ -31,8 +31,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Docker Build ${{ matrix.images }}
-      run: docker compose build ${{ matrix.images }}
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        driver: docker-container
+        driver-opts: network=host
+
+    - name: Build ${{ matrix.images }}
+      uses: docker/bake-action@v6
+      with:
+        targets: ${{ matrix.images }}
+        set: |
+          *.cache-from=type=gha,scope=${{ matrix.images }}-${{ matrix.runner }}
+          *.cache-to=type=gha,mode=max,scope=${{ matrix.images }}-${{ matrix.runner }}
+        load: true
 
     - name: Test on ${{ matrix.images }}
       run: docker compose run ${{ matrix.images }} ./tests.sh
