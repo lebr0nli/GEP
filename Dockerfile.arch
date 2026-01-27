@@ -1,6 +1,5 @@
 FROM archlinux:latest
 
-# Install curl gdb python3 python3-pip python3-venv tmux git vim
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm \
     python \
@@ -9,6 +8,8 @@ RUN pacman -Syu --noconfirm && \
     tmux \
     git \
     gdb \
+    gcc \
+    make \
     curl \
     wget \
     vim && \
