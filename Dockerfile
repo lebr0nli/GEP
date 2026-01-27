@@ -19,7 +19,7 @@ RUN apt-get update && \
 
 ENV PATH="/root/.fzf/bin:/root/.local/bin:${PATH}"
 
-COPY --from=ghcr.io/astral-sh/uv:0.5.14 /uv /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.9.27 /uv /bin/
 
 COPY . /root/.local/share/GEP
 
