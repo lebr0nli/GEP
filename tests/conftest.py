@@ -17,6 +17,52 @@ GDB_HISTORY_NAME = ".gdb_history"
 GDBINIT_NAME = "gdbinit"
 GDBINIT_GEP_PY_PATH = Path(__file__).parent.parent / "gdbinit-gep.py"
 TIME_INTERVAL = 1
+TEST_PROGRAM = str((Path(__file__).parent / "fixtures" / "test_program").resolve())
+
+
+class Ansi:
+    """ANSI escape codes for terminal colors."""
+
+    RED = b"\x1b[91m"
+    GRAY = b"\x1b[90m"
+    RESET = b"\x1b[0m"
+    SUGGESTION_GRAY = b"\x1b[38;5;241m"
+    SUGGESTION_RESET = b"\x1b[39m"
+
+    @classmethod
+    def suggestion(cls, text: bytes) -> bytes:
+        """Wrap text with autosuggestion gray color."""
+        return cls.SUGGESTION_GRAY + text + cls.SUGGESTION_RESET
+
+
+class Fzf:
+    """fzf UI elements."""
+
+    POINTER = b"\xe2\x96\x8c"  # ▌
+
+
+class Breakpoint:
+    """Breakpoint-related symbols and helpers."""
+
+    CIRCLE_ENABLED = "\u25cf"  # ● Filled circle
+    CIRCLE_DISABLED = "\u25cb"  # ○ Empty circle
+
+    @classmethod
+    def enabled_circle(cls) -> bytes:
+        """Return the ANSI-colored enabled breakpoint circle."""
+        return Ansi.RED + cls.CIRCLE_ENABLED.encode()
+
+    @classmethod
+    def disabled_circle(cls) -> bytes:
+        """Return the ANSI-colored disabled breakpoint circle."""
+        return Ansi.GRAY + cls.CIRCLE_DISABLED.encode()
+
+
+class MacOSKeys:
+    """Unicode characters sent by macOS Option key combinations."""
+
+    OPT_T = "\u2020"  # † sent by Option-t
+    OPT_X = "\u2248"  # ≈ sent by Option-x
 
 
 def run_with_screen_256color(

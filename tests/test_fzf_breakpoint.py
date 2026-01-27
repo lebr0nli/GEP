@@ -1,15 +1,8 @@
-from pathlib import Path
-
+from conftest import TEST_PROGRAM
+from conftest import Breakpoint
+from conftest import Fzf
 from conftest import GDBSession
-
-FZF_POINTER = b"\xe2\x96\x8c"  # ▌
-CIRCLE_ENABLED = "\u25cf"  # ● Filled circle
-CIRCLE_DISABLED = "\u25cb"  # ○ Empty circle
-ANSI_RED = b"\x1b[91m"
-ANSI_GRAY = b"\x1b[90m"
-MACOS_OPT_T = "\u2020"  # † sent by Option-t on macOS
-MACOS_OPT_X = "\u2248"  # ≈ sent by Option-x on macOS
-TEST_PROGRAM = str((Path(__file__).parent / "fixtures" / "test_program").resolve())
+from conftest import MacOSKeys
 
 
 class TestToggleDeleteFunctionality:
@@ -43,7 +36,7 @@ class TestToggleDeleteFunctionality:
         gdb_session.clear_pane()
         gdb_session.send_key("Escape")
         gdb_session.send_key("t")
-        assert FZF_POINTER in gdb_session.capture_pane()
+        assert Fzf.POINTER in gdb_session.capture_pane()
         gdb_session.send_key("Escape")
         gdb_session.clear_pane()
         gdb_session.send_literal("info breakpoints")
@@ -85,7 +78,7 @@ class TestToggleDeleteFunctionality:
         gdb_session.clear_pane()
         gdb_session.send_key("Escape")
         gdb_session.send_key("x")
-        assert FZF_POINTER in gdb_session.capture_pane()
+        assert Fzf.POINTER in gdb_session.capture_pane()
         gdb_session.send_key("Escape")
         gdb_session.clear_pane()
         gdb_session.send_literal("info breakpoints")
@@ -113,9 +106,9 @@ class TestToggleDeleteFunctionality:
     def test_toggle_with_macos_option_t(self, gdb_session: GDBSession) -> None:
         gdb_session.start(gdb_args=[TEST_PROGRAM, "-ex", "break main"])
         gdb_session.clear_pane()
-        gdb_session.send_literal(MACOS_OPT_T)
+        gdb_session.send_literal(MacOSKeys.OPT_T)
         pane_content = gdb_session.capture_pane()
-        assert FZF_POINTER in pane_content
+        assert Fzf.POINTER in pane_content
         gdb_session.send_key("Enter")
         pane_content = gdb_session.capture_pane()
         assert b"disabled" in pane_content
@@ -123,9 +116,9 @@ class TestToggleDeleteFunctionality:
     def test_delete_with_macos_option_x(self, gdb_session: GDBSession) -> None:
         gdb_session.start(gdb_args=[TEST_PROGRAM, "-ex", "break main"])
         gdb_session.clear_pane()
-        gdb_session.send_literal(MACOS_OPT_X)
+        gdb_session.send_literal(MacOSKeys.OPT_X)
         pane_content = gdb_session.capture_pane()
-        assert FZF_POINTER in pane_content
+        assert Fzf.POINTER in pane_content
         gdb_session.send_key("Enter")
         pane_content = gdb_session.capture_pane()
         assert b"deleted" in pane_content
@@ -138,7 +131,7 @@ class TestFzfVisualization:
         gdb_session.send_key("Escape")
         gdb_session.send_key("t")
         pane_content = gdb_session.capture_pane()
-        assert FZF_POINTER in pane_content
+        assert Fzf.POINTER in pane_content
         assert b"main" in pane_content
 
     def test_shows_multiple_breakpoints(self, gdb_session: GDBSession) -> None:
@@ -182,7 +175,7 @@ class TestFzfVisualization:
         gdb_session.send_key("Escape")
         gdb_session.send_key("t")
         pane_content = gdb_session.capture_pane(with_color=True)
-        assert ANSI_RED + CIRCLE_ENABLED.encode() in pane_content
+        assert Breakpoint.enabled_circle() in pane_content
 
     def test_format_disabled_circle_is_gray(self, gdb_session: GDBSession) -> None:
         gdb_session.start(gdb_args=[TEST_PROGRAM, "-ex", "break main", "-ex", "disable 1"])
@@ -190,7 +183,7 @@ class TestFzfVisualization:
         gdb_session.send_key("Escape")
         gdb_session.send_key("t")
         pane_content = gdb_session.capture_pane(with_color=True)
-        assert ANSI_GRAY + CIRCLE_DISABLED.encode() in pane_content
+        assert Breakpoint.disabled_circle() in pane_content
 
     def test_format_function_breakpoint_location(self, gdb_session: GDBSession) -> None:
         gdb_session.start(gdb_args=[TEST_PROGRAM, "-ex", "break add"])
@@ -257,7 +250,7 @@ class TestFzfVisualization:
         assert b"add" in pane_content
 
 
-class TestFzfPreviewInfo:
+class TestPreviewInformation:
     def test_shows_enabled_status(self, gdb_session: GDBSession) -> None:
         gdb_session.start(gdb_args=[TEST_PROGRAM, "-ex", "break main"])
         gdb_session.clear_pane()
