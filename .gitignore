@@ -9,3 +9,4 @@ geprc.py
 !example/gdbinit-gep
 !example/geprc.py
 tests/fixtures/test_program
+tests/fixtures/test_program_cpp
