@@ -17,7 +17,8 @@ GDB_HISTORY_NAME = ".gdb_history"
 GDBINIT_NAME = "gdbinit"
 GDBINIT_GEP_PY_PATH = Path(__file__).parent.parent / "gdbinit-gep.py"
 TIME_INTERVAL = 1
-TEST_PROGRAM = str((Path(__file__).parent / "fixtures" / "test_program").resolve())
+TEST_PROGRAM_C = str((Path(__file__).parent / "fixtures" / "test_program").resolve())
+TEST_PROGRAM_CPP = str((Path(__file__).parent / "fixtures" / "test_program_cpp").resolve())
 
 
 class Ansi:
