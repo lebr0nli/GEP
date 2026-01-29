@@ -45,6 +45,7 @@ jobs:
           *.cache-from=type=gha,scope=${{ matrix.images }}-${{ matrix.runner }}
           *.cache-to=type=gha,mode=max,scope=${{ matrix.images }}-${{ matrix.runner }}
         load: true
+        provenance: false
 
     - name: Test on ${{ matrix.images }}
       run: docker compose run ${{ matrix.images }} ./tests.sh
