@@ -63,7 +63,15 @@ fi
 
 echo "Copying default config to $GEP_BASE if not exists"
 for file in "$GEP_BASE"/example/*; do
-    [ -f "$file" ] && cp -n "$file" "$GEP_BASE"
+    [ -f "$file" ] || continue
+    filename=$(basename "$file")
+    dest="$GEP_BASE/$filename"
+    if [ -e "$dest" ]; then
+        :
+    else
+        cp "$file" "$dest"
+        echo "  Copied: $filename"
+    fi
 done
 
 if [ "$SKIP_GDBINIT" -eq 1 ]; then
