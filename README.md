@@ -21,6 +21,9 @@ And also, GEP has some awesome features already, you can directly use it!
   - fzf (When fzf is installed)
   - floating window (Similar to IPython's auto-completion)
 - [fish](https://fishshell.com)-like autosuggestions (<kbd>→</kbd> key to accept the suggestion)
+- Breakpoint management with fzf:
+  - <kbd>Alt/Esc/Option</kbd>+<kbd>t</kbd> to enable/disable breakpoints
+  - <kbd>Alt/Esc/Option</kbd>+<kbd>x</kbd> to delete breakpoints
 - has the ability to build custom key binding and its callback function by modifying `geprc.py`
 - compatible with the latest version of your favorite GDB plug-ins:
   - [pwndbg/pwndbg](https://github.com/pwndbg/pwndbg)
