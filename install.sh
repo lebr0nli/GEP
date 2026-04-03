@@ -7,6 +7,7 @@ help_and_exit() {
   -d,  --dev         install development dependencies
   --skip-venv        skip creating virtualenv
   --skip-gdbinit     do not set up gdbinit
+  --uv               use uv for virtualenv installation
 EOF
     exit 1
 }
@@ -14,6 +15,7 @@ EOF
 DEV=0
 SKIP_VENV=0
 SKIP_GDBINIT=0
+USE_UV=0
 
 while [ $# -gt 0 ]; do
     case $1 in
@@ -25,6 +27,9 @@ while [ $# -gt 0 ]; do
             ;;
         --skip-gdbinit)
             SKIP_GDBINIT=1
+            ;;
+        --uv)
+            USE_UV=1
             ;;
         *)
             echo "Unknown option: $1"
@@ -52,12 +57,22 @@ else
             PYTHON="${PYTHON}${PYVER}"
         fi
         VENV_PATH=$GEP_BASE/.venv
-        echo "Creating virtualenv in path: ${VENV_PATH}"
-        "$PYTHON" -m venv "$VENV_PATH"
-        PYTHON=$VENV_PATH/bin/python
-        echo "Installing dependencies"
-        "$PYTHON" -m pip install -U pip
-        "$VENV_PATH/bin/pip" install --no-cache-dir -e .
+
+        if [ "$USE_UV" -eq 1 ]; then
+            echo "Using uv to create virtualenv in path: ${VENV_PATH}"
+            uv venv --python "$PYVER" --allow-existing "$VENV_PATH"
+            PYTHON=$VENV_PATH/bin/python
+            echo "Installing dependencies"
+            uv pip install --python "$PYTHON" --no-cache-dir -e . 
+        else
+            echo "Creating virtualenv in path: ${VENV_PATH}"
+            "$PYTHON" -m venv "$VENV_PATH"
+            PYTHON=$VENV_PATH/bin/python
+            echo "Installing dependencies"
+            "$PYTHON" -m pip install -U pip
+            "$VENV_PATH/bin/pip" install --no-cache-dir -e .
+        fi
+
     fi
 fi
 
