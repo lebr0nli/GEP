@@ -63,7 +63,7 @@ else
             uv venv --python "$PYVER" --allow-existing "$VENV_PATH"
             PYTHON=$VENV_PATH/bin/python
             echo "Installing dependencies"
-            uv pip install --python "$PYTHON" --no-cache-dir -e . 
+            uv pip install --python "$PYTHON" --no-cache-dir -e .
         else
             echo "Creating virtualenv in path: ${VENV_PATH}"
             "$PYTHON" -m venv "$VENV_PATH"
