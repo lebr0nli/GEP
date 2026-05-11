@@ -56,9 +56,7 @@ from prompt_toolkit.completion import Completion
 from prompt_toolkit.document import Document
 from prompt_toolkit.formatted_text import ANSI
 from prompt_toolkit.formatted_text import FormattedText
-from prompt_toolkit.history import FileHistory
 from prompt_toolkit.history import History
-from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.key_binding import KeyPressEvent
 from prompt_toolkit.output import create_output
 from prompt_toolkit.shortcuts import CompleteStyle
@@ -817,29 +815,126 @@ else:
     print_warning("Install fzf for better experience with GEP")
 
 
-class GDBHistory(FileHistory):
+class GDBCommandsHistory(History):
     """
     Manage your GDB History
     """
 
-    def __init__(self, filename: str, ignore_duplicates: bool = False) -> None:
-        self.ignore_duplicates = ignore_duplicates
-        super().__init__(filename=filename)
+    def __init__(self) -> None:
+        super().__init__()
+        self._commands: list[str] = self.load_history_file()
+        if len(self._commands) > self.max_size:
+            self._commands = self._commands[-self.max_size :]
+        atexit.register(self.dump_history_file)
+        # Make prompt_toolkit happy
+        self._loaded = True
+        self._loaded_strings = self._commands[::-1]
 
-    def load_history_strings(self) -> list[str]:
-        strings = []
+    @property
+    def filename(self) -> str:
+        return T.cast(str, gdb.parameter("history filename"))
+
+    @property
+    def should_save(self) -> bool:
+        return T.cast(bool, gdb.parameter("history save"))
+
+    @property
+    def max_size(self) -> int:
+        size = T.cast(int, gdb.parameter("history size"))
+        if size == -1:
+            return 0xFFFFFFFF
+        return size
+
+    @property
+    def remove_duplicates(self) -> int:
+        return T.cast(int, gdb.parameter("history remove-duplicates"))
+
+    @property
+    def commands(self) -> list[str]:
+        return self._commands.copy()
+
+    def load_history_file(self) -> list[str]:
+        if not self.filename:
+            return []
+        saved_commands = []
         if os.path.exists(self.filename):
             with open(self.filename) as f:
-                for string in reversed(f.read().splitlines()):
-                    if self.ignore_duplicates and string in strings:
-                        continue
-                    if string:
-                        strings.append(string)
-        return strings
+                for command in f.read().splitlines():
+                    if command:
+                        saved_commands.append(command)
+        return saved_commands
+
+    def dump_history_file(self) -> None:
+        if not self.should_save:
+            return
+        if not self.filename:
+            return
+        dirpath = os.path.dirname(self.filename)
+        if dirpath:
+            os.makedirs(dirpath, exist_ok=True)
+        with open(self.filename, "w") as f:
+            for cmd in self._commands:
+                f.write(cmd + "\n")
+
+    def load_history_strings(self) -> T.Iterable[str]:
+        yield from reversed(self._commands)
+
+    def append_string(self, string: str) -> None:
+        # We will handle the append logic by ourselves
+        pass
 
     def store_string(self, string: str) -> None:
-        with open(self.filename, "a") as f:
-            f.write(string.strip() + "\n")
+        removal = self.remove_duplicates
+        if removal != 0:
+            stop_idx = max(0, len(self._commands) - removal) if removal > 0 else 0
+            for idx in range(len(self._commands) - 1, stop_idx - 1, -1):
+                if self._commands[idx] == string:
+                    del self._commands[idx]
+                    break
+
+        self._commands.append(string)
+        if len(self._commands) > self.max_size:
+            self._commands = self._commands[-self.max_size :]
+        # Make prompt_toolkit happy
+        self._loaded_strings = self._commands[::-1]
+
+
+class ShowCommands(gdb.Command):
+    """Show the history of commands you typed.
+    You can supply a command number to start with, or a '+' to start after
+    the previous command number shown.
+    """
+
+    HIST_PRINT = 10
+
+    def __init__(self, history: GDBCommandsHistory) -> None:
+        super().__init__("show commands", gdb.COMMAND_NONE)
+        self._history = history
+        self._next_offset = 0
+
+    def invoke(self, argument: str, from_tty: bool) -> None:
+        commands = self._history.commands
+        argument = argument.strip()
+
+        if not argument:
+            start = len(commands) - self.HIST_PRINT
+        elif argument == "+":
+            start = self._next_offset
+        else:
+            try:
+                start = int(argument) - 1 - self.HIST_PRINT // 2
+            except ValueError:
+                raise gdb.GdbError(f"Invalid argument: {argument!r}")
+
+        if len(commands) - start < self.HIST_PRINT:
+            start = len(commands) - self.HIST_PRINT
+        start = max(0, start)
+        end = min(start + self.HIST_PRINT, len(commands))
+
+        for i in range(start, end):
+            print(f"{i + 1:5d}  {commands[i]}")
+
+        self._next_offset = end
 
 
 class GDBCompleter(Completer):
@@ -927,9 +1022,11 @@ def emulate_prompt(session: PromptSession, current_prompt: str, gdb_history: His
     full_cmd = session.prompt(ANSI(current_prompt.replace("\001", "").replace("\002", "")))
     main_cmd = re.split(r"\W+", full_cmd.strip())[0]
     quit_input_in_multiline_mode = False
+    is_repeat = False
 
     if not full_cmd.strip():
         full_cmd = get_repeat_command(gdb_history)
+        is_repeat = True
     elif main_cmd in MULTI_LINE_COMMANDS:
 
         def single_line_py(main_cmd: str, full_cmd: str) -> bool:
@@ -969,6 +1066,9 @@ def emulate_prompt(session: PromptSession, current_prompt: str, gdb_history: His
                 full_cmd += new_line
 
     if not quit_input_in_multiline_mode:
+        if not is_repeat:
+            # Update command history
+            gdb_history.store_string(full_cmd)
         # This is a hack to fix the issue when debugging the kernel with qemu-system-*
         # Without this hack, somehow pressing ctrl-c in GDB will not interrupt the kernel
         # See #23 for more details
@@ -984,15 +1084,8 @@ except gdb.error as e: print(e)
 def gep_prompt(current_prompt: str) -> None:
     print_info("GEP is running now!")
     UserParameter.gep_loaded = True
-    history_on = gdb.parameter("history save")
-    if history_on:
-        global HISTORY_FILENAME
-        HISTORY_FILENAME = T.cast(str, gdb.parameter("history filename"))
-        is_ignore_duplicates = -1 == gdb.parameter("history remove-duplicates")
-        gdb_history = GDBHistory(HISTORY_FILENAME, ignore_duplicates=is_ignore_duplicates)
-    else:
-        print_warning("`set history save on` for better experience with GEP")
-        gdb_history = InMemoryHistory()
+    gdb_history = GDBCommandsHistory()
+    ShowCommands(gdb_history)
     session: PromptSession = PromptSession(
         history=gdb_history,
         enable_history_search=True,
