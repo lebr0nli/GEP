@@ -816,8 +816,7 @@ class GDBCommandsHistory(History):
     def __init__(self) -> None:
         super().__init__()
         self._commands: list[str] = self.load_history_file()
-        if len(self._commands) > self.max_size:
-            self._commands = self._commands[-self.max_size :]
+        self._trim_to_max_size()
         atexit.register(self.dump_history_file)
         # Make prompt_toolkit happy
         self._loaded = True
@@ -833,10 +832,7 @@ class GDBCommandsHistory(History):
 
     @property
     def max_size(self) -> int:
-        size = T.cast(int, gdb.parameter("history size"))
-        if size == -1:
-            return 0xFFFFFFFF
-        return size
+        return T.cast(int, gdb.parameter("history size"))
 
     @property
     def remove_duplicates(self) -> int:
@@ -845,6 +841,17 @@ class GDBCommandsHistory(History):
     @property
     def commands(self) -> list[str]:
         return self._commands.copy()
+
+    def _trim_to_max_size(self) -> None:
+        max_size = self.max_size
+        if max_size == 0:
+            self._commands.clear()
+            return
+        elif max_size < 0:
+            # This means unlimited history size
+            return
+        elif len(self._commands) > max_size:
+            self._commands = self._commands[-max_size:]
 
     def load_history_file(self) -> list[str]:
         if not self.filename:
@@ -886,8 +893,7 @@ class GDBCommandsHistory(History):
                     break
 
         self._commands.append(string)
-        if len(self._commands) > self.max_size:
-            self._commands = self._commands[-self.max_size :]
+        self._trim_to_max_size()
         # Make prompt_toolkit happy
         self._loaded_strings = self._commands[::-1]
 
