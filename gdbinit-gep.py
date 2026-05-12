@@ -854,25 +854,28 @@ class GDBCommandsHistory(History):
             self._commands = self._commands[-max_size:]
 
     def load_history_file(self) -> list[str]:
-        if not self.filename:
+        filename = self.filename
+        if not filename:
             return []
         saved_commands = []
-        if os.path.exists(self.filename):
-            with open(self.filename) as f:
+        if os.path.exists(filename):
+            with open(filename) as f:
                 for command in f.read().splitlines():
                     if command:
                         saved_commands.append(command)
         return saved_commands
 
     def dump_history_file(self) -> None:
-        if not self.should_save:
+        should_save = self.should_save
+        if not should_save:
             return
-        if not self.filename:
+        filename = self.filename
+        if not filename:
             return
-        dirpath = os.path.dirname(self.filename)
+        dirpath = os.path.dirname(filename)
         if dirpath:
             os.makedirs(dirpath, exist_ok=True)
-        with open(self.filename, "w") as f:
+        with open(filename, "w") as f:
             for cmd in self._commands:
                 f.write(cmd + "\n")
 
