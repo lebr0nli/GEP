@@ -292,9 +292,7 @@ def create_fzf_process(
         run_opts = FZF_BASE_OPTS
     cmd = ("fzf",) + run_opts + extra_opts + ("--query", query)
     if preview:
-        custom_preview_opts: str = gdb.parameter(
-            "fzf-preview-opts"
-        )  # ty: ignore[invalid-assignment]
+        custom_preview_opts: str = gdb.parameter("fzf-preview-opts")  # ty: ignore[invalid-assignment]
         preview_opts = (
             tuple(shlex.split(custom_preview_opts))
             if custom_preview_opts
@@ -1155,9 +1153,7 @@ def hijack_gdb() -> None:
                 return
             setattr(REAL_GDB_MODULE, name, value)
 
-    sys.modules["gdb"] = gdb = GdbModuleWrapper(
-        "gdb", getattr(gdb, "__doc__", "")
-    )  # ty: ignore[invalid-assignment]
+    sys.modules["gdb"] = gdb = GdbModuleWrapper("gdb", getattr(gdb, "__doc__", ""))  # ty: ignore[invalid-assignment]
 
 
 def main() -> None:
