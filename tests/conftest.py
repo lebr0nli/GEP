@@ -146,27 +146,36 @@ class GDBSession:
 
     def stop(self) -> None:
         """
+        Kill the tmux session.
+
+        :return: None
+        """
+        if not self.__session_started:
+            return
+        pid = subprocess.check_output(
+            [
+                "tmux",
+                "list-panes",
+                "-t",
+                self.session_name,
+                "-F",
+                "#{pane_pid}",
+            ],
+            text=True,
+        ).strip()
+        if pid:
+            os.kill(int(pid), signal.SIGTERM)
+        subprocess.run(["tmux", "kill-session", "-t", self.session_name])
+        self.__session_started = False
+
+    def exit(self) -> None:
+        """
         Remove the temporary directory and stop the GDB session.
 
         :return: None
         """
+        self.stop()
         self.tmpdir.cleanup()
-        if self.__session_started:
-            pid = subprocess.check_output(
-                [
-                    "tmux",
-                    "list-panes",
-                    "-t",
-                    self.session_name,
-                    "-F",
-                    "#{pane_pid}",
-                ],
-                text=True,
-            ).strip()
-            if pid:
-                os.kill(int(pid), signal.SIGTERM)
-            subprocess.run(["tmux", "kill-session", "-t", self.session_name])
-            self.__session_started = False
 
     def check_session_started(func: T.Callable) -> T.Callable:
         """
@@ -238,7 +247,7 @@ class GDBSession:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        self.stop()
+        self.exit()
 
 
 @pytest.fixture
