@@ -2,7 +2,8 @@
 set history save on
 
 # ignore duplicates
-set history remove-duplicates unlimited
+# Note: This option might have side effects: https://github.com/pwndbg/pwndbg/issues/2831
+# set history remove-duplicates unlimited
 
 # save all GDB histories to a same place (For example, ~/.gdb_history)
 # set history filename ~/.gdb_history
