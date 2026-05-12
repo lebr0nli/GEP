@@ -63,7 +63,6 @@ from prompt_toolkit.shortcuts import CompleteStyle
 
 # global variables
 HAS_FZF = which("fzf") is not None
-HISTORY_FILENAME = ".gdb_history"
 MULTI_LINE_COMMANDS = {"commands", "if", "while", "py", "python", "define", "document"}
 # This sucks, but there's not a GDB API for checking dont-repeat now.
 # I just collect some common used commands which should not be repeated.
@@ -328,18 +327,12 @@ def fzf_reverse_search(event: KeyPressEvent) -> None:
         # so user can see the original prompt while selecting completions, which is more user-friendly
         event.app.renderer.render(event.app, event.app.layout, is_done=True)
 
-        if not os.path.exists(HISTORY_FILENAME):
-            # just create an empty file
-            with open(HISTORY_FILENAME, "w"):
-                pass
         p = create_fzf_process(event.app.current_buffer.document.text_before_cursor)
-        with open(HISTORY_FILENAME) as f:
-            visited = set()
-            # Reverse the history, and only keep the youngest and unique one
-            for line in f.read().strip().split("\n")[::-1]:
-                if line and line not in visited:
-                    visited.add(line)
-                    p.stdin.write(line + "\n")  # ty: ignore[possibly-missing-attribute]
+        visited = set()
+        for cmd in reversed(event.app.current_buffer.history.get_strings()):
+            if cmd and cmd not in visited:
+                visited.add(cmd)
+                p.stdin.write(cmd + "\n")  # ty: ignore[possibly-missing-attribute]
         stdout, _ = p.communicate()
         if stdout:
             event.app.current_buffer.document = Document()  # clear buffer
