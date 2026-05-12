@@ -14,7 +14,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "ruff==0.8.6",
-    "ty==0.0.8",
+    "ty==0.0.35",
     "vermin==1.8.0",
     "pytest==8.2.0",
     "types-gdb>=16.3.0.20250920",
