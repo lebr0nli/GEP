@@ -202,7 +202,7 @@ def common_prefix(m: list[str]) -> str:
 if hasattr(gdb, "execute_mi"):  # This feature is only available in GDB 14.1 or later
 
     def get_gdb_completes(query: str) -> list[str]:
-        return gdb.execute_mi("-complete", query)["matches"]  # type: ignore[attr-defined]
+        return gdb.execute_mi("-complete", query)["matches"]  # ty: ignore[invalid-return-type]
 else:
 
     def get_gdb_completes(query: str) -> list[str]:
@@ -283,7 +283,7 @@ def create_fzf_process(
     if query.startswith("!"):
         # ! in the beginning of query means we want to run the command directly for fzf
         query = "^" + query
-    custom_run_opts: str = gdb.parameter("fzf-run-opts")  # type: ignore[assignment]
+    custom_run_opts: str = gdb.parameter("fzf-run-opts")  # ty: ignore[invalid-assignment]
     if custom_run_opts:
         run_opts = tuple(shlex.split(custom_run_opts))
     elif use_select_1:
@@ -292,7 +292,9 @@ def create_fzf_process(
         run_opts = FZF_BASE_OPTS
     cmd = ("fzf",) + run_opts + extra_opts + ("--query", query)
     if preview:
-        custom_preview_opts: str = gdb.parameter("fzf-preview-opts")  # type: ignore[assignment]
+        custom_preview_opts: str = gdb.parameter(
+            "fzf-preview-opts"
+        )  # ty: ignore[invalid-assignment]
         preview_opts = (
             tuple(shlex.split(custom_preview_opts))
             if custom_preview_opts
@@ -332,7 +334,7 @@ def fzf_reverse_search(event: KeyPressEvent) -> None:
         for cmd in reversed(event.app.current_buffer.history.get_strings()):
             if cmd and cmd not in visited:
                 visited.add(cmd)
-                p.stdin.write(cmd + "\n")  # ty: ignore[possibly-missing-attribute]
+                p.stdin.write(cmd + "\n")  # ty: ignore[unresolved-attribute]
         stdout, _ = p.communicate()
         if stdout:
             event.app.current_buffer.document = Document()  # clear buffer
@@ -386,11 +388,11 @@ def fzf_tab_autocomplete(event: KeyPressEvent) -> None:
                 # (gdb) complete p 'm
                 # ...
                 # p 'main
-                p.stdin.write(  # ty: ignore[possibly-missing-attribute]
+                p.stdin.write(  # ty: ignore[unresolved-attribute]
                     completion[completion_idx:] + "'" + "\n"
                 )
             else:
-                p.stdin.write(  # ty: ignore[possibly-missing-attribute]
+                p.stdin.write(  # ty: ignore[unresolved-attribute]
                     completion[completion_idx:] + "\n"
                 )
             if should_get_all_help_docs:
@@ -658,7 +660,7 @@ def fzf_toggle_breakpoint(event: KeyPressEvent) -> None:
             if bp.number < 0:
                 continue
             line = format_breakpoint_for_fzf(bp)
-            p.stdin.write(line + "\n")  # ty: ignore[possibly-missing-attribute]
+            p.stdin.write(line + "\n")  # ty: ignore[unresolved-attribute]
 
         t = FzfBreakpointPreviewThread(fifo_input, fifo_output)
         t.start()
@@ -711,7 +713,7 @@ def fzf_delete_breakpoint(event: KeyPressEvent) -> None:
             if bp.number < 0:
                 continue
             line = format_breakpoint_for_fzf(bp)
-            p.stdin.write(line + "\n")  # ty: ignore[possibly-missing-attribute]
+            p.stdin.write(line + "\n")  # ty: ignore[unresolved-attribute]
 
         t = FzfBreakpointPreviewThread(fifo_input, fifo_output)
         t.start()
