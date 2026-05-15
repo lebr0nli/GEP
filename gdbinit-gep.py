@@ -815,12 +815,17 @@ class GDBCommandsHistory(History):
 
     def __init__(self) -> None:
         super().__init__()
+        self._base_num = 1
         self._commands: list[str] = self.load_history_file()
         self._trim_to_max_size()
         atexit.register(self.dump_history_file)
         # Make prompt_toolkit happy
         self._loaded = True
         self._loaded_strings = self._commands[::-1]
+
+    @property
+    def base_num(self) -> int:
+        return self._base_num
 
     @property
     def filename(self) -> str:
@@ -845,12 +850,14 @@ class GDBCommandsHistory(History):
     def _trim_to_max_size(self) -> None:
         max_size = self.max_size
         if max_size == 0:
+            self._base_num += len(self._commands)
             self._commands.clear()
             return
         elif max_size < 0:
             # This means unlimited history size
             return
         elif len(self._commands) > max_size:
+            self._base_num += len(self._commands) - max_size
             self._commands = self._commands[-max_size:]
 
     def load_history_file(self) -> list[str]:
@@ -916,6 +923,7 @@ class ShowCommands(gdb.Command):
 
     def invoke(self, argument: str, from_tty: bool) -> None:
         commands = self._history.commands
+        base_num = self._history.base_num
         argument = argument.strip()
 
         if not argument:
@@ -924,7 +932,7 @@ class ShowCommands(gdb.Command):
             start = self._next_offset
         else:
             try:
-                start = int(argument) - 1 - self.HIST_PRINT // 2
+                start = int(argument) - base_num - self.HIST_PRINT // 2
             except ValueError:
                 raise gdb.GdbError(f"Invalid argument: {argument!r}")
 
@@ -934,7 +942,7 @@ class ShowCommands(gdb.Command):
         end = min(start + self.HIST_PRINT, len(commands))
 
         for i in range(start, end):
-            print(f"{i + 1:5d}  {commands[i]}")
+            print(f"{i + base_num:5d}  {commands[i]}")
 
         self._next_offset = end
 

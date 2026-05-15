@@ -293,3 +293,44 @@ def test_history_save_off() -> None:
     assert new_history[0] == "print 1"
     assert new_history[1] == "print 2"
     assert new_history[2] == "print 3"
+
+
+def test_truncation_of_loaded_history(gdb_session: GDBSession) -> None:
+    history_size = 256
+    gdb_session.start(
+        gdb_args=["-ex", f"set history size {history_size}"],
+        histories=[f"print {i}" for i in range(1, history_size + 1)],
+    )
+
+    gdb_session.clear_pane()
+    gdb_session.send_literal("show commands 1")
+    gdb_session.send_key("Enter")
+    pane_content = gdb_session.capture_pane()
+
+    assert len(_history_output_lines(pane_content)) == 10
+    for i in range(2, 12):
+        assert _numbered_command(i, f"print {i}") in pane_content
+
+    gdb_session.clear_pane()
+    gdb_session.send_literal("show commands 1")
+    gdb_session.send_key("Enter")
+    pane_content = gdb_session.capture_pane()
+
+    assert len(_history_output_lines(pane_content)) == 10
+    for i in range(3, 13):
+        assert _numbered_command(i, f"print {i}") in pane_content
+
+    gdb_session.clear_pane()
+    gdb_session.send_literal("show commands")
+    gdb_session.send_key("Enter")
+    pane_content = gdb_session.capture_pane()
+
+    current_max = history_size + 3
+    assert len(_history_output_lines(pane_content)) == 10
+    for i in range(current_max, current_max - 10, -1):
+        if i == current_max:
+            assert _numbered_command(i, "show commands") in pane_content
+        elif i == current_max - 1 or i == current_max - 2:
+            assert _numbered_command(i, "show commands 1") in pane_content
+        else:
+            assert _numbered_command(i, f"print {i}") in pane_content
