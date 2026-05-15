@@ -858,11 +858,14 @@ class GDBCommandsHistory(History):
         if not filename:
             return []
         saved_commands = []
-        if os.path.exists(filename):
-            with open(filename) as f:
-                for command in f.read().splitlines():
-                    if command:
-                        saved_commands.append(command)
+        try:
+            if os.path.exists(filename):
+                with open(filename) as f:
+                    for command in f.read().splitlines():
+                        if command:
+                            saved_commands.append(command)
+        except Exception as e:
+            print_warning(f"Failed to read history file: {e}")
         return saved_commands
 
     def dump_history_file(self) -> None:
@@ -873,11 +876,15 @@ class GDBCommandsHistory(History):
         if not filename:
             return
         dirpath = os.path.dirname(filename)
-        if dirpath:
-            os.makedirs(dirpath, exist_ok=True)
-        with open(filename, "w") as f:
-            for cmd in self._commands:
-                f.write(cmd + "\n")
+        try:
+            if dirpath:
+                os.makedirs(dirpath, exist_ok=True)
+            with open(filename, "w") as f:
+                for cmd in self._commands:
+                    f.write(cmd + "\n")
+        except Exception as e:
+            print_warning(f"Failed to write history file: {e}")
+            pass
 
     def load_history_strings(self) -> T.Iterable[str]:
         yield from reversed(self._commands)
