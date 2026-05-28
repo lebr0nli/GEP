@@ -1,8 +1,15 @@
+import sys
+
+import pytest
 from conftest import TEST_PROGRAM_C
 from conftest import Breakpoint
 from conftest import Fzf
 from conftest import GDBSession
 from conftest import MacOSKeys
+
+skip_start_on_macos = pytest.mark.skipif(
+    sys.platform == "darwin", reason="Skipping tests that start the inferior on macOS"
+)
 
 
 class TestToggleDeleteFunctionality:
@@ -209,6 +216,7 @@ class TestFzfVisualization:
         pane_content = gdb_session.capture_pane()
         assert b"global_var" in pane_content
 
+    @skip_start_on_macos
     def test_format_read_watchpoint(self, gdb_session: GDBSession) -> None:
         gdb_session.start(gdb_args=[TEST_PROGRAM_C, "-ex", "start", "-ex", "rwatch global_var"])
         gdb_session.clear_pane()
@@ -217,6 +225,7 @@ class TestFzfVisualization:
         pane_content = gdb_session.capture_pane()
         assert b"global_var" in pane_content
 
+    @skip_start_on_macos
     def test_format_access_watchpoint(self, gdb_session: GDBSession) -> None:
         gdb_session.start(gdb_args=[TEST_PROGRAM_C, "-ex", "start", "-ex", "awatch global_var"])
         gdb_session.clear_pane()
@@ -225,6 +234,7 @@ class TestFzfVisualization:
         pane_content = gdb_session.capture_pane()
         assert b"global_var" in pane_content
 
+    @skip_start_on_macos
     def test_format_catchpoint(self, gdb_session: GDBSession) -> None:
         gdb_session.start(gdb_args=[TEST_PROGRAM_C, "-ex", "catch syscall write"])
         gdb_session.clear_pane()
@@ -283,6 +293,7 @@ class TestPreviewInformation:
         pane_content = gdb_session.capture_pane()
         assert b"Expression:" in pane_content
 
+    @skip_start_on_macos
     def test_shows_what_for_catchpoint(self, gdb_session: GDBSession) -> None:
         gdb_session.start(gdb_args=[TEST_PROGRAM_C, "-ex", "catch syscall write"])
         gdb_session.clear_pane()
@@ -349,6 +360,7 @@ class TestPreviewInformation:
         assert b"Type:" in pane_content
         assert b"watchpoint" in pane_content
 
+    @skip_start_on_macos
     def test_shows_type_for_catchpoint(self, gdb_session: GDBSession) -> None:
         gdb_session.start(gdb_args=[TEST_PROGRAM_C, "-ex", "catch syscall write"])
         gdb_session.clear_pane()
