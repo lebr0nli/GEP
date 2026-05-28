@@ -88,12 +88,23 @@ class GDBSession:
         Initialize the GDB session.
         """
         self.tmpdir = tempfile.TemporaryDirectory(prefix="gep_test_")
+        self.tmux_socket_path = str(Path(self.tmpdir.name) / "tmux.sock")
         with (Path(self.tmpdir.name) / GDBINIT_NAME).open("w") as f:
             f.write("set pagination off\n")
             f.write(f"source {GDBINIT_GEP_PY_PATH.resolve()}\n")
 
         self.session_name = None
         self.__session_started = False
+
+    def tmux_cmd(self, args: list[str]) -> list[str]:
+        """
+        Return a tmux command using this session's isolated server socket.
+
+        :param list[str] args: The arguments to pass to tmux.
+        :return: The full tmux command.
+        :rtype: list[str]
+        """
+        return ["tmux", "-S", self.tmux_socket_path, *args]
 
     def start(self, gdb_args: list[str] | None = None, histories: list[str] = None) -> None:
         """
@@ -109,23 +120,24 @@ class GDBSession:
                 f.write("\n".join(histories))
         gdbinit_path = Path(self.tmpdir.name) / GDBINIT_NAME
 
-        cmd = [
-            "tmux",
-            "-f",
-            os.devnull,
-            "new-session",
-            "-d",
-            "-P",
-            "-F",
-            "#{session_name}",
-            "-c",
-            self.tmpdir.name,
-            "gdb",
-            "-q",
-            "--nx",
-            "-ix",
-            str(gdbinit_path.resolve()),
-        ]
+        cmd = self.tmux_cmd(
+            [
+                "-f",
+                os.devnull,
+                "new-session",
+                "-d",
+                "-P",
+                "-F",
+                "#{session_name}",
+                "-c",
+                self.tmpdir.name,
+                "gdb",
+                "-q",
+                "--nx",
+                "-ix",
+                str(gdbinit_path.resolve()),
+            ]
+        )
         if gdb_args:
             cmd.extend(gdb_args)
 
@@ -152,21 +164,32 @@ class GDBSession:
         """
         if not self.__session_started:
             return
-        pid = subprocess.check_output(
-            [
-                "tmux",
-                "list-panes",
-                "-t",
-                self.session_name,
-                "-F",
-                "#{pane_pid}",
-            ],
-            text=True,
-        ).strip()
-        if pid:
-            os.kill(int(pid), signal.SIGTERM)
-        subprocess.run(["tmux", "kill-session", "-t", self.session_name])
-        self.__session_started = False
+        try:
+            try:
+                pid = subprocess.check_output(
+                    self.tmux_cmd(
+                        [
+                            "list-panes",
+                            "-t",
+                            self.session_name,
+                            "-F",
+                            "#{pane_pid}",
+                        ]
+                    ),
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                ).strip()
+            except subprocess.CalledProcessError:
+                pid = ""
+            if pid:
+                os.kill(int(pid), signal.SIGTERM)
+        finally:
+            subprocess.run(
+                self.tmux_cmd(["kill-server"]),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            self.__session_started = False
 
     def exit(self) -> None:
         """
@@ -203,7 +226,9 @@ class GDBSession:
         :param str literal: The literal string to send to the GDB session.
         :return: None
         """
-        run_with_screen_256color(["tmux", "send-keys", "-l", "-t", self.session_name, literal])
+        run_with_screen_256color(
+            self.tmux_cmd(["send-keys", "-l", "-t", self.session_name, literal])
+        )
         time.sleep(TIME_INTERVAL)
 
     @check_session_started
@@ -214,7 +239,7 @@ class GDBSession:
         :param str key: The key to send to the GDB session.
         :return: None
         """
-        run_with_screen_256color(["tmux", "send-keys", "-t", self.session_name, key])
+        run_with_screen_256color(self.tmux_cmd(["send-keys", "-t", self.session_name, key]))
         time.sleep(TIME_INTERVAL)
 
     @check_session_started
@@ -225,9 +250,9 @@ class GDBSession:
         :return: None
         :rtype: None
         """
-        run_with_screen_256color(["tmux", "send-keys", "-t", self.session_name, "C-l"])
+        run_with_screen_256color(self.tmux_cmd(["send-keys", "-t", self.session_name, "C-l"]))
         time.sleep(TIME_INTERVAL)
-        run_with_screen_256color(["tmux", "clear-history", "-t", self.session_name])
+        run_with_screen_256color(self.tmux_cmd(["clear-history", "-t", self.session_name]))
 
     @check_session_started
     def capture_pane(self, with_color: bool = False) -> bytes:
@@ -238,7 +263,7 @@ class GDBSession:
         :return: The content of the pane.
         :rtype: bytes
         """
-        cmd = ["tmux", "capture-pane", "-p", "-t", self.session_name]
+        cmd = self.tmux_cmd(["capture-pane", "-p", "-t", self.session_name])
         if with_color:
             cmd.append("-e")
         return run_with_screen_256color(cmd, capture_output=True).stdout.rstrip(b"\n")
