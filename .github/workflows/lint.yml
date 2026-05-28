@@ -21,15 +21,17 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v4
+    - uses: cachix/install-nix-action@v31
+      with:
+        github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Install dependencies
       run: |
-        sudo apt-get update && sudo apt-get install -y shellcheck shfmt
-        curl -LsSf https://astral.sh/uv/0.5.14/install.sh | sh
-        ~/.local/bin/uv sync --group dev
+        nix develop -c uv sync --group dev
 
     - name: Run linters
       run: |
-        ./lint.sh
+        nix develop -c ./lint.sh
