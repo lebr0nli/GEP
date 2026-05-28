@@ -154,9 +154,9 @@ def test_fzf_tab_quoted_symbol_completion(gdb_session: GDBSession) -> None:
     This tests the bug handling quoted symbols for commands like 'b' and 'p'.
     """
     gdb_session.start(gdb_args=[TEST_PROGRAM_C])
-    gdb_session.send_literal("b 'm")
+    gdb_session.send_literal("b 'ma")
     gdb_session.send_key("Tab")
-    gdb_session.send_literal("ain")
+    gdb_session.send_literal("in")
     gdb_session.send_key("Enter")
     pane_content = gdb_session.capture_pane()
     assert b"(gdb) b 'main'" == pane_content
@@ -165,9 +165,9 @@ def test_fzf_tab_quoted_symbol_completion(gdb_session: GDBSession) -> None:
     gdb_session.send_key("C-c")
     gdb_session.clear_pane()
 
-    gdb_session.send_literal("p 'm")
+    gdb_session.send_literal("p 'ma")
     gdb_session.send_key("Tab")
-    gdb_session.send_literal("ain")
+    gdb_session.send_literal("in")
     gdb_session.send_key("Enter")
     pane_content = gdb_session.capture_pane()
     assert b"(gdb) p 'main'" == pane_content
