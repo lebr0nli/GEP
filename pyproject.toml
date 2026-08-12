@@ -1,6 +1,6 @@
 [project]
 name = "GEP"
-version = "2026.01.01"
+version = "2026.08.12"
 description = "GDB Enhanced Prompt"
 readme = "README.md"
 authors = [
