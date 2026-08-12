@@ -4,6 +4,7 @@ __pycache__
 .DS_Store
 .mypy_cache
 .ruff_cache
+.direnv
 gdbinit-gep
 geprc.py
 !example/gdbinit-gep
